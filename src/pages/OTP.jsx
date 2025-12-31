@@ -1,16 +1,15 @@
 import React, { useEffect, useState } from "react";
-import logo from "../assets/black-logo.png";
-import logo_with_title from "../assets/logo-with-title.png";
+import logo from "../assets/logo.png";
+import logo_with_title from "../assets/logo.png";
 import { Link, Navigate, useParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { otpVerification, resetAuthSlice } from "../store/slices/authSlice";
-import { toast } from "react-toastify"
+import { toast } from "react-toastify";
 
 const OTP = () => {
   const { email } = useParams();
   const [otp, setOtp] = useState("");
   const dispatch = useDispatch();
-
 
   const { loading, error, message, user, isAuthenticated } = useSelector(
     (state) => state.auth
@@ -22,20 +21,15 @@ const OTP = () => {
   };
 
   useEffect(() => {
-    // if (message) {
-    //   toast.success(message);
-    // }
     if (error) {
       toast.error(error);
       dispatch(resetAuthSlice());
     }
-  }, [dispatch, isAuthenticated, error, loading]);
+  }, [dispatch, error]);
 
   if (isAuthenticated) {
-    return <Navigate to={"/"} />;
+    return <Navigate to="/" />;
   }
-
-
 
   return (
     <>
@@ -44,9 +38,9 @@ const OTP = () => {
         <div className="w-full md:w-1/2 flex items-center justify-center bg-white p-8 relative">
           <Link
             to="/register"
-            className="border-2 border-black rounded-3xl font-bold w-52 py-2 px-4 fixed top-10 -left-28 hover:bg-black hover:text-white transition duration-300 text-end"
+            className="border-2 border-[#C41526] text-[#C41526] rounded-3xl font-bold w-52 py-2 px-4 fixed top-10 -left-28 hover:bg-[#C41526] hover:text-white transition duration-300 text-end"
           >
-            Back
+            Quay lại
           </Link>
 
           <div className="max-w-sm w-full">
@@ -56,12 +50,12 @@ const OTP = () => {
               </div>
             </div>
 
-            <h1 className="text-4xl font-medium text-center mb-12 overflow-hidden">
-              Check your Mailbox
+            <h1 className="text-4xl font-medium text-center mb-12 text-[#C41526] overflow-hidden">
+              Kiểm tra hộp thư
             </h1>
 
-            <p className="text-gray-800 text-center mb-12">
-              Please enter the otp to proceed
+            <p className="text-gray-700 text-center mb-12">
+              Vui lòng nhập mã OTP để tiếp tục
             </p>
 
             <form onSubmit={handleOtpVerification}>
@@ -70,23 +64,23 @@ const OTP = () => {
                   type="number"
                   value={otp}
                   onChange={(e) => setOtp(e.target.value)}
-                  placeholder="OTP"
-                  className="w-full px-4 py-3 border border-black rounded-md focus:outline-none"
+                  placeholder="Mã OTP"
+                  className="w-full px-4 py-3 border border-[#C41526] rounded-md focus:outline-none"
                 />
               </div>
 
               <button
                 type="submit"
-                className="border-2 mt-5 border-black w-full font-semibold bg-black text-white py-2 rounded-lg hover:bg-white hover:text-black transition"
+                className="border-2 mt-5 border-[#C41526] w-full font-semibold bg-[#C41526] text-white py-2 rounded-lg hover:bg-white hover:text-[#C41526] transition"
               >
-                VERIFY
+                XÁC NHẬN
               </button>
             </form>
           </div>
         </div>
 
         {/* RIGHT SIDE */}
-        <div className="hidden w-full md:w-1/2 bg-black text-white md:flex flex-col items-center justify-center p-8 rounded-tl-[80px] rounded-bl-[80px]">
+        <div className="hidden w-full md:w-1/2 bg-[#C41526] text-white md:flex flex-col items-center justify-center p-8 rounded-tl-[80px] rounded-bl-[80px]">
           <div className="text-center h-[400px]">
             <div className="flex justify-center mb-12">
               <img
@@ -96,22 +90,23 @@ const OTP = () => {
               />
             </div>
 
-            <p className="text-gray-300 mb-12">
-              New to our platform? Sign up now.
+            <p className="text-gray-200 mb-12">
+              Chưa có tài khoản?
+              <br />
+              Đăng ký ngay để bắt đầu!
             </p>
 
             <Link
               to="/register"
-              className="border-2 mt-5 border-white px-8 w-full font-semibold bg-black text-white py-2 rounded-lg hover:bg-white hover:text-black transition"
+              className="border-2 mt-5 border-white px-8 w-full font-semibold bg-[#C41526] text-white py-2 rounded-lg hover:bg-white hover:text-[#C41526] transition"
             >
-              SIGN UP
+              ĐĂNG KÝ
             </Link>
           </div>
         </div>
       </div>
     </>
   );
-
 };
 
 export default OTP;

@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import logo_with_title from "../assets/logo-with-title.png";
+import logo_with_title from "../assets/logo.png";
 import logoutIcon from "../assets/logout.png";
 import closeIcon from "../assets/white-close-icon.png";
 import dashboardIcon from "../assets/element.png";
@@ -10,8 +10,11 @@ import usersIcon from "../assets/people.png";
 import { RiAdminFill } from "react-icons/ri";
 import { useDispatch, useSelector } from "react-redux";
 import { logout, resetAuthSlice } from "../store/slices/authSlice";
-import { toast } from "react-toastify"
-import { toggleAddNewAdminPopup, toggleSettingPopup } from "../store/slices/popUpSlice";
+import { toast } from "react-toastify";
+import {
+  toggleAddNewAdminPopup,
+  toggleSettingPopup,
+} from "../store/slices/popUpSlice";
 import AddNewAdmin from "../popups/AddNewAdmin";
 
 const SideBar = ({
@@ -28,7 +31,6 @@ const SideBar = ({
     dispatch(logout());
   };
 
-
   useEffect(() => {
     if (error) {
       toast.error(error);
@@ -41,13 +43,12 @@ const SideBar = ({
     }
   }, [dispatch, isAuthenticated, error, loading, message]);
 
-
-
   return (
     <>
       <aside
-        className={`${isSideBarOpen ? "left-0" : "-left-full"
-          } z-10 transition-all duration-700 md:relative md:left-0 flex w-64 bg-black text-white flex-col h-full`}
+        className={`${
+          isSideBarOpen ? "left-0" : "-left-full"
+        } z-10 transition-all duration-700 md:relative md:left-0 flex w-64 bg-[#C41526] text-white flex-col h-full`}
         style={{ position: "fixed" }}
       >
         <div className="px-6 py-4 my-8">
@@ -62,6 +63,7 @@ const SideBar = ({
             <img src={dashboardIcon} alt="icon" />
             <span>Dashboard</span>
           </button>
+
           <button
             className="w-full py-2 font-medium bg-transparent rounded-md hover:cursor-pointer flex items-center space-x-2"
             onClick={() => setSelectedComponent("Books")}
@@ -69,6 +71,7 @@ const SideBar = ({
             <img src={bookIcon} alt="icon" />
             <span>Books</span>
           </button>
+
           {isAuthenticated && user?.role === "Admin" && (
             <>
               <button
@@ -78,6 +81,7 @@ const SideBar = ({
                 <img src={catalogIcon} alt="icon" />
                 <span>Catalog</span>
               </button>
+
               <button
                 className="w-full py-2 font-medium bg-transparent rounded-md hover:cursor-pointer flex items-center space-x-2"
                 onClick={() => setSelectedComponent("Users")}
@@ -85,6 +89,7 @@ const SideBar = ({
                 <img src={usersIcon} alt="icon" />
                 <span>Users</span>
               </button>
+
               <button
                 className="w-full py-2 font-medium bg-transparent rounded-md hover:cursor-pointer flex items-center space-x-2"
                 onClick={() => dispatch(toggleAddNewAdminPopup())}
@@ -94,25 +99,26 @@ const SideBar = ({
               </button>
             </>
           )}
+
           {isAuthenticated && user?.role === "User" && (
-            <>
-              <button
-                className="w-full py-2 font-medium bg-transparent rounded-md hover:cursor-pointer flex items-center space-x-2"
-                onClick={() => setSelectedComponent("My Borrowed Books")}
-              >
-                <img src={catalogIcon} alt="icon" />{" "}
-                <span>My Borrowed Books</span>
-              </button>
-            </>
+            <button
+              className="w-full py-2 font-medium bg-transparent rounded-md hover:cursor-pointer flex items-center space-x-2"
+              onClick={() => setSelectedComponent("My Borrowed Books")}
+            >
+              <img src={catalogIcon} alt="icon" />
+              <span>My Borrowed Books</span>
+            </button>
           )}
+
           <button
             className="w-full py-2 font-medium bg-transparent rounded-md hover:cursor-pointer flex items-center space-x-2"
             onClick={() => dispatch(toggleSettingPopup())}
           >
-            <img src={settingIcon} alt="icon" />{" "}
+            <img src={settingIcon} alt="icon" />
             <span>Update Credentials</span>
           </button>
         </nav>
+
         <div className="px-6 py-4">
           <button
             className="py-2 font-medium text-center bg-transparent rounded-md hover:cursor-pointer flex items-center justify-center space-x-5 mx-auto w-fit"
@@ -122,6 +128,7 @@ const SideBar = ({
             <span>Log Out</span>
           </button>
         </div>
+
         <img
           src={closeIcon}
           alt="icon"
@@ -129,12 +136,10 @@ const SideBar = ({
           className="h-fit w-fit absolute top-0 right-4 mt-4 block md:hidden"
         />
       </aside>
-      {addNewAdminPopup && <AddNewAdmin />}
 
+      {addNewAdminPopup && <AddNewAdmin />}
     </>
   );
-
 };
 
 export default SideBar;
-
