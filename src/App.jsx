@@ -11,6 +11,8 @@ import { useDispatch, useSelector } from "react-redux";
 import { useEffect } from "react";
 import { getUser } from "./store/slices/authSlice";
 import { fetchAllUsers } from "./store/slices/userSlice";
+import { fetchAllBooks } from "./store/slices/bookSlice";
+import { fetchUserBorrowedBooks } from "./store/slices/borrowSlice";
 
 const App = () => {
   const { user, isAuthenticated } = useSelector((state) => state.auth);
@@ -18,10 +20,14 @@ const App = () => {
 
   useEffect(() => {
     dispatch(getUser());
+    dispatch(fetchAllBooks());
+    if (isAuthenticated && user?.role === "User"){
+      dispatch(fetchUserBorrowedBooks());
+    }
     if (isAuthenticated && user?.role === "Admin"){
       dispatch(fetchAllUsers());
     }
-  }, []);
+  }, [isAuthenticated]);
 
 
 
