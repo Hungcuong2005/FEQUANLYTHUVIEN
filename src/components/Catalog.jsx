@@ -10,6 +10,7 @@ import {
 } from "../store/slices/borrowSlice";
 import { fetchAllBooks, resetBookSlice } from "../store/slices/bookSlice";
 import ReturnBookPopup from "../popups/ReturnBookPopup";
+import Header from "../layout/Header";
 
 const Catalog = () => {
   const dispatch = useDispatch();
@@ -173,7 +174,7 @@ const Catalog = () => {
                         <PiKeyReturnBold
                           className="w-6 h-6 cursor-pointer"
                           onClick={() =>
-                            openReturnBookPopup(book.book, book?.user?.email)
+                            openReturnBookPopup(book.book, book?.user.email)
                           }
                         />
                       )}
@@ -185,11 +186,11 @@ const Catalog = () => {
           </div>
         ) : (
           <h3 className="text-3xl mt-5 font-medium">
-            No non-returned books found!
+            No {filter === "borrowed" ? "borrowed" : "overdue"} books found!! 
           </h3>
         )}
       </main>
-      {returnBookPopup && <ReturnBookPopup />}
+      {returnBookPopup && <ReturnBookPopup bookId={borrowedBookId} email={email}/>}
     </>
   );
 };
