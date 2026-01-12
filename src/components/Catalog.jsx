@@ -22,7 +22,6 @@ const Catalog = () => {
 
   const [filter, setFilter] = useState("borrowed");
 
-
   const formatDateAndTime = (timeStamp) => {
     const date = new Date(timeStamp);
 
@@ -51,18 +50,19 @@ const Catalog = () => {
   // ===== FILTER BOOKS =====
   const currentDate = new Date();
 
+  // Đang mượn (chưa quá hạn)
   const borrowedBooks = allBorrowedBooks?.filter((book) => {
     const dueDate = new Date(book.dueDate);
     return dueDate > currentDate;
   });
 
+  // Quá hạn
   const overdueBooks = allBorrowedBooks?.filter((book) => {
     const dueDate = new Date(book.dueDate);
     return dueDate <= currentDate;
   });
 
-  const booksToDisplay =
-    filter === "borrowed" ? borrowedBooks : overdueBooks;
+  const booksToDisplay = filter === "borrowed" ? borrowedBooks : overdueBooks;
 
   // ===== RETURN BOOK POPUP =====
   const [email, setEmail] = useState("");
@@ -95,48 +95,63 @@ const Catalog = () => {
       <main className="relative flex-1 p-6 pt-28">
         <Header />
 
-        {/* Sub Header */}
-
-
         {/* Filter Buttons */}
         <header className="flex flex-col gap-3 sm:flex-row md:items-center">
           <button
             className={`relative rounded sm:rounded-tr-none sm:rounded-br-none sm:rounded-tl-lg sm:rounded-bl-lg
-            text-center border-2 font-semibold py-2 w-full sm:w-72 ${filter === "borrowed"
-                ? "bg-black text-white border-black"
+            text-center border-2 font-semibold py-2 w-full sm:w-72 transition
+            ${filter === "borrowed"
+                ? "bg-[#C41526] text-white border-[#C41526]"
                 : "bg-gray-200 text-black border-gray-200 hover:bg-gray-300"
               }`}
             onClick={() => setFilter("borrowed")}
           >
-            Borrowed Books
+            Sách đang mượn
           </button>
 
           <button
             className={`relative rounded sm:rounded-tl-none sm:rounded-bl-none sm:rounded-tr-lg sm:rounded-br-lg
-            text-center border-2 font-semibold py-2 w-full sm:w-72 ${filter === "overdue"
-                ? "bg-black text-white border-black"
+            text-center border-2 font-semibold py-2 w-full sm:w-72 transition
+            ${filter === "overdue"
+                ? "bg-[#C41526] text-white border-[#C41526]"
                 : "bg-gray-200 text-black border-gray-200 hover:bg-gray-300"
               }`}
             onClick={() => setFilter("overdue")}
           >
-            Overdue Borrowers
+            Danh sách quá hạn
           </button>
         </header>
 
         {booksToDisplay && booksToDisplay.length > 0 ? (
-          <div className="mt-6 overflow-auto bg-white rounded-md shadow-lg">
+          <div className="mt-6 overflow-auto bg-white rounded-md shadow-lg border-t-4 border-[#C41526]">
             <table className="min-w-full border-collapse">
               <thead>
-                <tr className="bg-gray-200">
-                  <th className="px-4 py-2 text-left">ID</th>
-                  <th className="px-4 py-2 text-left">Username</th>
-                  <th className="px-4 py-2 text-left">Email</th>
-                  <th className="px-4 py-2 text-left">Price</th>
-                  <th className="px-4 py-2 text-left">Due Date</th>
-                  <th className="px-4 py-2 text-left">Date & Time</th>
-                  <th className="px-4 py-2 text-left">Return</th>
+                <tr className="bg-[#FDE8EA]">
+                  <th className="px-4 py-3 text-left text-base font-bold text-[#C41526]">
+                    STT
+                  </th>
+                  <th className="px-4 py-3 text-left text-base font-bold text-[#C41526]">
+                    Tên người dùng
+                  </th>
+                  <th className="px-4 py-3 text-left text-base font-bold text-[#C41526]">
+                    Email
+                  </th>
+                  <th className="px-4 py-3 text-left text-base font-bold text-[#C41526]">
+                    Giá
+                  </th>
+                  <th className="px-4 py-3 text-left text-base font-bold text-[#C41526]">
+                    Hạn trả
+                  </th>
+                  <th className="px-4 py-3 text-left text-base font-bold text-[#C41526]">
+                    Ngày &amp; giờ mượn
+                  </th>
+                  <th className="px-4 py-3 text-left text-base font-bold text-[#C41526]">
+                    Trả sách
+                  </th>
                 </tr>
               </thead>
+
+
 
               <tbody>
                 {booksToDisplay.map((book, index) => (
@@ -146,36 +161,32 @@ const Catalog = () => {
                   >
                     <td className="px-4 py-2">{index + 1}</td>
 
-                    <td className="px-4 py-2">
-                      {book?.user.name}
-                    </td>
+                    <td className="px-4 py-2">{book?.user?.name}</td>
+
+                    <td className="px-4 py-2">{book?.user?.email}</td>
 
                     <td className="px-4 py-2">
-                      {book?.user.email}
+                      {typeof book.price === "number"
+                        ? `${book.price.toLocaleString("vi-VN")}₫`
+                        : book.price}
                     </td>
 
-                    <td className="px-4 py-2">
-                      {book.price}
-                    </td>
-
-                    <td className="px-4 py-2">
-                      {formatDate(book.dueDate)}
-                    </td>
+                    <td className="px-4 py-2">{formatDate(book.dueDate)}</td>
 
                     <td className="px-4 py-2">
                       {formatDateAndTime(book.createdAt)}
                     </td>
 
-
                     <td className="px-4 py-2">
                       {book.returnDate ? (
-                        <FaSquareCheck className="w-6 h-6" />
+                        <FaSquareCheck className="w-6 h-6 text-green-600" />
                       ) : (
                         <PiKeyReturnBold
-                          className="w-6 h-6 cursor-pointer"
+                          className="w-6 h-6 cursor-pointer text-[#C41526] hover:opacity-80 transition"
                           onClick={() =>
-                            openReturnBookPopup(book.book, book?.user.email)
+                            openReturnBookPopup(book.book, book?.user?.email)
                           }
+                          title="Xác nhận trả sách"
                         />
                       )}
                     </td>
@@ -185,15 +196,18 @@ const Catalog = () => {
             </table>
           </div>
         ) : (
-          <h3 className="text-3xl mt-5 font-medium">
-            No {filter === "borrowed" ? "borrowed" : "overdue"} books found!! 
+          <h3 className="text-2xl mt-5 font-medium text-[#C41526]">
+            Không có{" "}
+            {filter === "borrowed" ? "sách đang mượn" : "sách quá hạn"}!
           </h3>
         )}
       </main>
-      {returnBookPopup && <ReturnBookPopup bookId={borrowedBookId} email={email}/>}
+
+      {returnBookPopup && (
+        <ReturnBookPopup bookId={borrowedBookId} email={email} />
+      )}
     </>
   );
 };
 
 export default Catalog;
-

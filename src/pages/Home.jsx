@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { GiHamburgerMenu } from "react-icons/gi";
 import { useSelector } from "react-redux";
 import { Navigate } from "react-router-dom";
@@ -9,21 +9,23 @@ import Catalog from "../components/Catalog";
 import MyBorrowedBooks from "../components/MyBorrowedBooks";
 import Users from "../components/Users";
 import SideBar from "../layout/SideBar";
-import { toast } from "react-toastify";
-
-
 
 const Home = () => {
   const [isSideBarOpen, setIsSideBarOpen] = useState(false);
-  const [selectedComponent, setSelectedComponent] = useState("");
 
-  const { user, isAuthenticated } = useSelector(
-    (state) => state.auth
-  );
+  // ✅ cho phép lưu cả key + filter
+  const [selectedComponent, setSelectedComponent] = useState({ key: "Dashboard" });
+
+  const { user, isAuthenticated } = useSelector((state) => state.auth);
 
   if (!isAuthenticated) {
     return <Navigate to="/login" />;
   }
+
+  // ✅ hỗ trợ cả trường hợp setSelectedComponent("Books") cũ
+  const key = typeof selectedComponent === "string"
+    ? selectedComponent
+    : selectedComponent?.key;
 
   return (
     <>
@@ -41,46 +43,46 @@ const Home = () => {
           setSelectedComponent={setSelectedComponent}
         />
 
-        {
-          (() => {
-            switch (selectedComponent) {
-              case "Dashboard":
-                return user.role === "User" ? (
-                  <UserDashboard />
-                ) : (
-                  <AdminDashboard />
-                );
-                break;
+        {(() => {
+          switch (key) {
+            case "Dashboard":
+              return user.role === "User" ? (
+                <UserDashboard setSelectedComponent={setSelectedComponent} />
+              ) : (
+                <AdminDashboard />
+              );
 
-              case "Books":
-                return <BookManagement />;
-                break;
+            case "Books":
+              return <BookManagement />;
 
-              case "Catalog":
-                if (user.role === "Admin") {
-                  return <Catalog />;
-                }
-                break;
+            case "Catalog":
+              if (user.role === "Admin") return <Catalog />;
+              return null;
 
-              case "Users":
-                if (user.role === "Admin") {
-                  return <Users />;
-                }
-                break;
+            case "Users":
+              if (user.role === "Admin") return <Users />;
+              return null;
 
-              case "My Borrowed Books":
-                return <MyBorrowedBooks />;
-                break;
+            case "My Borrowed Books":
+              return (
+                <MyBorrowedBooks
+                  // ✅ filter mặc định khi bấm từ Dashboard
+                  defaultFilter={
+                    typeof selectedComponent === "object"
+                      ? selectedComponent?.filter
+                      : undefined
+                  }
+                />
+              );
 
-              default:
-                return user?.role === "User" ? (
-                  <UserDashboard />
-                ) : (
-                  <AdminDashboard />
-                );
-                break;
-            }
-          })()}
+            default:
+              return user?.role === "User" ? (
+                <UserDashboard setSelectedComponent={setSelectedComponent} />
+              ) : (
+                <AdminDashboard />
+              );
+          }
+        })()}
       </div>
     </>
   );

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import logo from "../assets/logo.png";
+import logo2 from "../assets/logo2.png";
 import logo_with_title from "../assets/logo.png";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, Navigate } from "react-router-dom";
@@ -51,7 +52,7 @@ const ForgotPassword = () => {
             </div>
 
             <h3 className="text-gray-200 mb-12 max-w-[320px] mx-auto text-3xl font-medium leading-10">
-              Thư viện số hiện đại dành cho việc mượn và đọc sách
+              Thư viện số hiện đại
             </h3>
           </div>
         </div>
@@ -66,13 +67,9 @@ const ForgotPassword = () => {
           </Link>
 
           <div className="w-full max-w-sm">
-            <div className="flex justify-center mb-12">
-              <div className="rounded-full flex items-center justify-center">
-                <img src={logo} alt="logo" className="h-24 w-auto" />
-              </div>
-            </div>
+           
 
-            <h1 className="text-4xl font-medium text-center mb-5 text-[#C41526] overflow-hidden">
+            <h1 className="text-3xl font-bold text-center mb-5 text-[#C41526] overflow-hidden">
               Quên mật khẩu
             </h1>
 

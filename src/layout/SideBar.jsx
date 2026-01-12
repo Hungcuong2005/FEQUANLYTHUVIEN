@@ -18,16 +18,12 @@ import {
 import AddNewAdmin from "../popups/AddNewAdmin";
 import SettingPopup from "../popups/SettingPopup";
 
-
-const SideBar = ({
-  isSideBarOpen,
-  setIsSideBarOpen,
-  setSelectedComponent,
-}) => {
+const SideBar = ({ isSideBarOpen, setIsSideBarOpen, setSelectedComponent }) => {
   const dispatch = useDispatch();
   const { addNewAdminPopup, settingPopup } = useSelector((state) => state.popup);
-  const { loading, error, message, user, isAuthenticated } =
-    useSelector((state) => state.auth);
+  const { loading, error, message, user, isAuthenticated } = useSelector(
+    (state) => state.auth
+  );
 
   const handleLogout = () => {
     dispatch(logout());
@@ -45,6 +41,9 @@ const SideBar = ({
     }
   }, [dispatch, isAuthenticated, error, loading, message]);
 
+  const navBtnClass =
+    "w-full py-2 font-medium bg-transparent rounded-md hover:cursor-pointer flex items-center space-x-2 px-2 hover:bg-white/10 transition";
+
   return (
     <>
       <aside
@@ -59,75 +58,75 @@ const SideBar = ({
 
         <nav className="flex-1 px-6 space-y-2">
           <button
-            className="w-full py-2 font-medium bg-transparent rounded-md hover:cursor-pointer flex items-center space-x-2"
+            className={navBtnClass}
             onClick={() => setSelectedComponent("Dashboard")}
           >
             <img src={dashboardIcon} alt="icon" />
-            <span>Dashboard</span>
+            <span>Bảng điều khiển</span>
           </button>
 
           <button
-            className="w-full py-2 font-medium bg-transparent rounded-md hover:cursor-pointer flex items-center space-x-2"
+            className={navBtnClass}
             onClick={() => setSelectedComponent("Books")}
           >
             <img src={bookIcon} alt="icon" />
-            <span>Books</span>
+            <span>Sách</span>
           </button>
 
           {isAuthenticated && user?.role === "Admin" && (
             <>
               <button
-                className="w-full py-2 font-medium bg-transparent rounded-md hover:cursor-pointer flex items-center space-x-2"
+                className={navBtnClass}
                 onClick={() => setSelectedComponent("Catalog")}
               >
                 <img src={catalogIcon} alt="icon" />
-                <span>Catalog</span>
+                <span>Mượn/Trả</span>
               </button>
 
               <button
-                className="w-full py-2 font-medium bg-transparent rounded-md hover:cursor-pointer flex items-center space-x-2"
+                className={navBtnClass}
                 onClick={() => setSelectedComponent("Users")}
               >
                 <img src={usersIcon} alt="icon" />
-                <span>Users</span>
+                <span>Người dùng</span>
               </button>
 
               <button
-                className="w-full py-2 font-medium bg-transparent rounded-md hover:cursor-pointer flex items-center space-x-2"
+                className={navBtnClass}
                 onClick={() => dispatch(toggleAddNewAdminPopup())}
               >
                 <RiAdminFill className="w-6 h-6" />
-                <span>Add New Admin</span>
+                <span>Thêm quản trị viên</span>
               </button>
             </>
           )}
 
           {isAuthenticated && user?.role === "User" && (
             <button
-              className="w-full py-2 font-medium bg-transparent rounded-md hover:cursor-pointer flex items-center space-x-2"
+              className={navBtnClass}
               onClick={() => setSelectedComponent("My Borrowed Books")}
             >
               <img src={catalogIcon} alt="icon" />
-              <span>My Borrowed Books</span>
+              <span>Sách tôi đã mượn</span>
             </button>
           )}
 
           <button
-            className="md:hidden w-full py-2 font-medium bg-transparent rounded-md hover:cursor-pointer flex items-center space-x-2"
+            className={`md:hidden ${navBtnClass}`}
             onClick={() => dispatch(toggleSettingPopup())}
           >
             <img src={settingIcon} alt="icon" />
-            <span>Update Credentials</span>
+            <span>Cập nhật thông tin tài khoản</span>
           </button>
         </nav>
 
-        <div className="px-6 py-4">
+        <div className="px-6 py-4 border-t border-white/20">
           <button
-            className="py-2 font-medium text-center bg-transparent rounded-md hover:cursor-pointer flex items-center justify-center space-x-5 mx-auto w-fit"
+            className="py-2 font-medium text-center bg-transparent rounded-md hover:cursor-pointer flex items-center justify-center space-x-3 mx-auto w-full hover:bg-white/10 transition"
             onClick={handleLogout}
           >
             <img src={logoutIcon} alt="icon" />
-            <span>Log Out</span>
+            <span>Đăng xuất</span>
           </button>
         </div>
 

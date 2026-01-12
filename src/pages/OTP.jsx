@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import logo from "../assets/logo.png";
+import logo2 from "../assets/logo2.png";
 import logo_with_title from "../assets/logo.png";
 import { Link, Navigate, useParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
@@ -44,13 +45,8 @@ const OTP = () => {
           </Link>
 
           <div className="max-w-sm w-full">
-            <div className="flex justify-center mb-12">
-              <div className="rounded-full flex items-center justify-center">
-                <img src={logo} alt="logo" className="h-24 w-auto" />
-              </div>
-            </div>
 
-            <h1 className="text-4xl font-medium text-center mb-12 text-[#C41526] overflow-hidden">
+            <h1 className="text-3xl font-bold text-center mb-5 text-[#C41526] overflow-hidden">
               Kiểm tra hộp thư
             </h1>
 
@@ -90,10 +86,12 @@ const OTP = () => {
               />
             </div>
 
-            <p className="text-gray-200 mb-12">
-              Chưa có tài khoản?
+            <p className="text-white/90 mb-7 text-lg md:text-xl leading-relaxed">
+              Bạn chưa có tài khoản?
               <br />
-              Đăng ký ngay để bắt đầu!
+              <span className="font-bold text-2xl md:text-3xl text-white drop-shadow-sm">
+                Đăng ký ngay để bắt đầu!
+              </span>
             </p>
 
             <Link

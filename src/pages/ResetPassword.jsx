@@ -58,7 +58,7 @@ const ResetPassword = () => {
             </div>
 
             <h3 className="text-gray-200 mb-12 max-w-[320px] mx-auto text-3xl font-medium leading-10">
-              Thư viện số hiện đại dành cho việc mượn và đọc sách
+              Thư viện số hiện đại
             </h3>
           </div>
         </div>
@@ -73,13 +73,9 @@ const ResetPassword = () => {
           </Link>
 
           <div className="w-full max-w-sm">
-            <div className="flex justify-center mb-12">
-              <div className="rounded-full flex items-center justify-center">
-                <img src={logo} alt="logo" className="h-24 w-auto" />
-              </div>
-            </div>
+     
 
-            <h1 className="text-4xl font-medium text-center mb-5 text-[#C41526] overflow-hidden">
+            <h1 className="text-3xl font-bold text-center mb-5 text-[#C41526] overflow-hidden">
               Đặt lại mật khẩu
             </h1>
 
