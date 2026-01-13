@@ -21,7 +21,9 @@ const BookManagement = () => {
   const dispatch = useDispatch();
 
   // ===== REDUX STATES =====
-  const { loading, error, message, books } = useSelector((state) => state.book);
+  const { loading, error, message, books, totalBooks, totalPages } = useSelector(
+    (state) => state.book
+  );
   const { isAuthenticated, user } = useSelector((state) => state.auth);
   const { addBookPopup, readBookPopup, recordBookPopup } = useSelector(
     (state) => state.popup
@@ -37,6 +39,12 @@ const BookManagement = () => {
   const [readBook, setReadBook] = useState({});
   const [borrowBookId, setBorrowBookId] = useState("");
   const [searchedKeyword, setSearchedKeyword] = useState("");
+  const [availabilityFilter, setAvailabilityFilter] = useState("all");
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
+  const [sortOption, setSortOption] = useState("newest");
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(8);
 
   // ===== FUNCTIONS =====
   const openReadPopup = (id) => {
@@ -51,10 +59,32 @@ const BookManagement = () => {
   };
 
   // ===== EFFECT =====
+  const queryParams = useMemo(() => {
+    const params = {
+      page,
+      limit,
+      sort: sortOption,
+    };
+    const keyword = searchedKeyword.trim();
+    if (keyword) {
+      params.search = keyword;
+    }
+    if (availabilityFilter !== "all") {
+      params.availability = availabilityFilter;
+    }
+    if (minPrice !== "") {
+      params.minPrice = minPrice;
+    }
+    if (maxPrice !== "") {
+      params.maxPrice = maxPrice;
+    }
+    return params;
+  }, [page, limit, sortOption, searchedKeyword, availabilityFilter, minPrice, maxPrice]);
+
   useEffect(() => {
     if (message || borrowSliceMessage) {
       toast.success(message || borrowSliceMessage);
-      dispatch(fetchAllBooks());
+      dispatch(fetchAllBooks(queryParams));
       dispatch(fetchAllBorrowedBooks());
       dispatch(resetBookSlice());
       dispatch(resetBorrowSlice());
@@ -73,13 +103,20 @@ const BookManagement = () => {
     borrowSliceError,
     borrowSliceLoading,
     borrowSliceMessage,
+    queryParams,
   ]);
 
-  const searchedBooks = useMemo(() => {
-    const key = searchedKeyword.trim().toLowerCase();
-    if (!key) return books || [];
-    return (books || []).filter((b) => (b.title || "").toLowerCase().includes(key));
-  }, [books, searchedKeyword]);
+  useEffect(() => {
+    dispatch(fetchAllBooks(queryParams));
+  }, [dispatch, queryParams]);
+
+  useEffect(() => {
+    if (page > totalPages && totalPages > 0) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
+
+  const searchedBooks = books || [];
 
   const moneyVND = (value) => {
     if (typeof value === "number") return `${value.toLocaleString("vi-VN")}₫`;
@@ -106,22 +143,60 @@ const BookManagement = () => {
               </p>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
-              {/* Search */}
-              <div className="relative w-full sm:w-72">
-                <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  placeholder="Tìm theo tên sách..."
-                  className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C41526] focus:border-[#C41526]"
-                  value={searchedKeyword}
-                  onChange={(e) => setSearchedKeyword(e.target.value)}
-                />
-              </div>
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                <div className="flex flex-1 flex-col gap-3 rounded-xl border border-[#FDE8EA] bg-[#FFFDFD] p-3 sm:p-4">
+                  <div className="text-xs uppercase tracking-wide text-gray-500 font-semibold">
+                    Tìm kiếm & lọc
+                  </div>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                    {/* Search */}
+                    <div className="relative w-full sm:w-72">
+                      <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        placeholder="Tìm theo tên / tác giả..."
+                        className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-0 focus:border-gray-300"
+                        value={searchedKeyword}
+                        onChange={(e) => {
+                          setSearchedKeyword(e.target.value);
+                          setPage(1);
+                        }}
+                      />
+                    </div>
 
-              {/* Add */}
-              {isAuthenticated && user?.role === "Admin" && (
-                <button
+                    <select
+                      className="w-full sm:w-auto px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm focus:outline-none focus:ring-0 focus:border-gray-300"
+                      value={availabilityFilter}
+                      onChange={(e) => {
+                        setAvailabilityFilter(e.target.value);
+                        setPage(1);
+                      }}
+                    >
+                      <option value="all">Tất cả trạng thái</option>
+                      <option value="true">Còn sách</option>
+                      <option value="false">Hết sách</option>
+                    </select>
+
+                    <select
+                      className="w-full sm:w-auto px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm focus:outline-none focus:ring-0 focus:border-gray-300"
+                      value={sortOption}
+                      onChange={(e) => {
+                        setSortOption(e.target.value);
+                        setPage(1);
+                      }}
+                    >
+                      <option value="newest">Mới nhất</option>
+                      <option value="price_asc">Giá tăng dần</option>
+                      <option value="price_desc">Giá giảm dần</option>
+                      <option value="quantity_desc">Còn nhiều</option>
+                      <option value="quantity_asc">Còn ít</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Add */}
+                {isAuthenticated && user?.role === "Admin" && (
+                  <button
                   type="button"
                   onClick={() => dispatch(toggleAddBookPopup())}
                   className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-[#C41526] text-white font-semibold hover:bg-[#A81220] transition"
@@ -143,7 +218,7 @@ const BookManagement = () => {
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-[#C41526]" />
               <span className="font-semibold text-gray-800">
-                Tổng: {searchedBooks.length} sách
+                Tổng: {totalBooks} sách
               </span>
             </div>
 
@@ -152,7 +227,7 @@ const BookManagement = () => {
             ) : null}
           </div>
 
-          {searchedBooks && searchedBooks.length > 0 ? (
+          {searchedBooks.length > 0 ? (
             <div className="overflow-auto">
               <table className="min-w-full border-collapse">
                 <thead>
@@ -197,7 +272,9 @@ const BookManagement = () => {
                       className={`border-t border-gray-100 ${(index + 1) % 2 === 0 ? "bg-gray-50" : "bg-white"
                         } hover:bg-[#FFF5F6] transition`}
                     >
-                      <td className="px-4 py-3">{index + 1}</td>
+                      <td className="px-4 py-3">
+                        {(page - 1) * limit + index + 1}
+                      </td>
                       <td className="px-4 py-3 font-bold text-gray-900">
                         {book.title}
                       </td>
@@ -259,6 +336,95 @@ const BookManagement = () => {
               </p>
             </div>
           )}
+
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between px-5 py-4 border-t border-[#FDE8EA] bg-[#FFFDFD]">
+            <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+              <span className="font-semibold text-gray-700">
+                Hiển thị {searchedBooks.length} / {totalBooks} sách
+              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-gray-500">Giá</span>
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="Từ"
+                  className="w-20 px-2 py-1 border border-gray-200 rounded-md bg-white focus:outline-none focus:ring-0 focus:border-gray-300"
+                  value={minPrice}
+                  onChange={(e) => {
+                    setMinPrice(e.target.value);
+                    setPage(1);
+                  }}
+                />
+                <span className="text-gray-400">-</span>
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="Đến"
+                  className="w-20 px-2 py-1 border border-gray-200 rounded-md bg-white focus:outline-none focus:ring-0 focus:border-gray-300"
+                  value={maxPrice}
+                  onChange={(e) => {
+                    setMaxPrice(e.target.value);
+                    setPage(1);
+                  }}
+                />
+              </div>
+              <button
+                type="button"
+                className="px-3 py-1 rounded-md border border-[#FDE8EA] text-[#C41526] font-semibold hover:bg-[#FDE8EA] transition"
+                onClick={() => {
+                  setSearchedKeyword("");
+                  setAvailabilityFilter("all");
+                  setMinPrice("");
+                  setMaxPrice("");
+                  setSortOption("newest");
+                  setPage(1);
+                }}
+              >
+                Xóa lọc
+              </button>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <span>Hiển thị</span>
+                <select
+                  className="px-2 py-1 border border-gray-200 rounded-md bg-white focus:outline-none focus:ring-0 focus:border-gray-300"
+                  value={limit}
+                  onChange={(e) => {
+                    setLimit(Number(e.target.value));
+                    setPage(1);
+                  }}
+                >
+                  <option value={5}>5</option>
+                  <option value={8}>8</option>
+                  <option value={12}>12</option>
+                </select>
+                <span>sách / trang</span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+                  disabled={page <= 1}
+                  className="px-3 py-1 rounded-md border border-gray-200 text-sm font-semibold text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed hover:border-[#C41526] hover:text-[#C41526] transition"
+                >
+                  Trước
+                </button>
+                <span className="text-sm text-gray-600">
+                  Trang {page} / {totalPages}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setPage((prev) => Math.min(prev + 1, totalPages))}
+                  disabled={page >= totalPages}
+                  className="px-3 py-1 rounded-md border border-gray-200 text-sm font-semibold text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed hover:border-[#C41526] hover:text-[#C41526] transition"
+                >
+                  Sau
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </main>
 

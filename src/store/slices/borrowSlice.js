@@ -76,6 +76,22 @@ const borrowSlice = createSlice({
       state.message = null;
     },
 
+    // ===== RENEW BOOK =====
+    renewBookRequest(state) {
+      state.loading = true;
+      state.error = null;
+      state.message = null;
+    },
+    renewBookSuccess(state, action) {
+      state.loading = false;
+      state.message = action.payload;
+    },
+    renewBookFailed(state, action) {
+      state.loading = false;
+      state.error = action.payload;
+      state.message = null;
+    },
+
     // ===== RESET =====
     resetBorrowSlice(state) {
       state.loading = false;
@@ -194,14 +210,31 @@ export const returnBook = (email, id) => async (dispatch) => {
     });
 };
 
+// ===== RENEW BOOK =====
+export const renewBorrowedBook = (bookId) => async (dispatch) => {
+  dispatch(borrowSlice.actions.renewBookRequest());
+
+  await axios
+    .post(`http://localhost:4000/api/v1/borrow/renew/${bookId}`, {}, {
+      withCredentials: true,
+    })
+    .then((res) => {
+      dispatch(borrowSlice.actions.renewBookSuccess(res.data.message));
+    })
+    .catch((err) => {
+      dispatch(
+        borrowSlice.actions.renewBookFailed(
+          err.response?.data?.message || err.message
+        )
+      );
+    });
+};
+
 export const resetBorrowSlice = () => (dispatch) => {
   dispatch(borrowSlice.actions.resetBorrowSlice());
 };
 
 export default borrowSlice.reducer;
-
-
-
 
 
 

@@ -4,12 +4,18 @@ import { useDispatch, useSelector } from "react-redux";
 import { toggleReadBookPopup } from "../store/slices/popUpSlice";
 import Header from "../layout/Header";
 import ReadBookPopup from "../popups/ReadBookPopup";
+import { toast } from "react-toastify";
+import {
+  fetchUserBorrowedBooks,
+  renewBorrowedBook,
+  resetBorrowSlice,
+} from "../store/slices/borrowSlice";
 
 const MyBorrowedBooks = ({ defaultFilter = "returned" }) => {
   const dispatch = useDispatch();
 
   const { books } = useSelector((state) => state.book);
-  const { userBorrowedBooks } = useSelector((state) => state.borrow);
+  const { userBorrowedBooks, message, error } = useSelector((state) => state.borrow);
   const { readBookPopup } = useSelector((state) => state.popup);
 
   const [readBook, setReadBook] = useState({});
@@ -44,6 +50,21 @@ const MyBorrowedBooks = ({ defaultFilter = "returned" }) => {
   useEffect(() => {
     if (defaultFilter) setFilter(defaultFilter);
   }, [defaultFilter]);
+
+  useEffect(() => {
+    if (message) {
+      toast.success(message);
+      dispatch(fetchUserBorrowedBooks());
+      dispatch(resetBorrowSlice());
+    }
+
+    if (error) {
+      toast.error(error);
+      dispatch(resetBorrowSlice());
+    }
+  }, [dispatch, message, error]);
+
+  const maxRenewals = 2;
 
   const returnedBooks = userBorrowedBooks?.filter((book) => book.returned === true);
   const nonReturnedBooks = userBorrowedBooks?.filter((book) => book.returned === false);
@@ -108,6 +129,9 @@ const MyBorrowedBooks = ({ defaultFilter = "returned" }) => {
                     Trạng thái
                   </th>
                   <th className="px-6 py-3 text-left text-base font-bold text-[#C41526]">
+                    Gia hạn
+                  </th>
+                  <th className="px-6 py-3 text-left text-base font-bold text-[#C41526]">
                     Xem
                   </th>
                 </tr>
@@ -115,7 +139,14 @@ const MyBorrowedBooks = ({ defaultFilter = "returned" }) => {
 
 
               <tbody>
-                {booksToDisplay.map((book, index) => (
+                {booksToDisplay.map((book, index) => {
+                  const today = new Date();
+                  const dueDate = book.dueDate ? new Date(book.dueDate) : null;
+                  const isOverdue = dueDate ? dueDate <= today : false;
+                  const renewCount = book.renewCount || 0;
+                  const isDisabled = book.returned || isOverdue || renewCount >= maxRenewals;
+
+                  return (
                   <tr
                     key={index}
                     className={(index + 1) % 2 === 0 ? "bg-gray-50" : ""}
@@ -138,6 +169,27 @@ const MyBorrowedBooks = ({ defaultFilter = "returned" }) => {
                       )}
                     </td>
                     <td className="px-4 py-2">
+                      <div className="flex flex-col gap-2">
+                        <span className="text-xs text-gray-500">
+                          Lần {renewCount}/{maxRenewals}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => dispatch(renewBorrowedBook(book.bookId))}
+                          disabled={isDisabled}
+                          className="px-3 py-1 rounded-md border border-[#FDE8EA] text-sm font-semibold text-[#C41526] hover:bg-[#FDE8EA] disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {book.returned
+                            ? "Đã trả"
+                            : isOverdue
+                              ? "Quá hạn"
+                              : renewCount >= maxRenewals
+                                ? "Hết lượt"
+                                : "Gia hạn +7 ngày"}
+                        </button>
+                      </div>
+                    </td>
+                    <td className="px-4 py-2">
                       <BookA
                         className="cursor-pointer transition hover:scale-110"
                         color="#C41526"
@@ -145,7 +197,7 @@ const MyBorrowedBooks = ({ defaultFilter = "returned" }) => {
                       />
                     </td>
                   </tr>
-                ))}
+                )})}
               </tbody>
             </table>
           </div>

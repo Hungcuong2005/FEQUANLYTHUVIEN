@@ -10,6 +10,10 @@ const bookSlice = createSlice({
     error: null,
     message: null,
     books: [],
+    totalBooks: 0,
+    page: 1,
+    limit: 0,
+    totalPages: 1,
   },
   reducers: {
     // ===== FETCH BOOKS =====
@@ -20,7 +24,11 @@ const bookSlice = createSlice({
     },
     fetchBooksSuccess(state, action) {
       state.loading = false;
-      state.books = action.payload;
+      state.books = action.payload.books;
+      state.totalBooks = action.payload.totalBooks;
+      state.page = action.payload.page;
+      state.limit = action.payload.limit;
+      state.totalPages = action.payload.totalPages;
       state.message = null;
     },
     fetchBooksFailed(state, action) {
@@ -53,16 +61,23 @@ const bookSlice = createSlice({
   },
 });
 
-export const fetchAllBooks = () => async (dispatch) => {
+export const fetchAllBooks = (params = {}) => async (dispatch) => {
   dispatch(bookSlice.actions.fetchBooksRequest());
 
   await axios
     .get("http://localhost:4000/api/v1/book/all", {
       withCredentials: true,
+      params,
     })
     .then((res) => {
       dispatch(
-        bookSlice.actions.fetchBooksSuccess(res.data.books)
+        bookSlice.actions.fetchBooksSuccess({
+          books: res.data.books,
+          totalBooks: res.data.totalBooks,
+          page: res.data.page,
+          limit: res.data.limit,
+          totalPages: res.data.totalPages,
+        })
       );
     })
     .catch((err) => {

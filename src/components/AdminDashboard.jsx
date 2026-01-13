@@ -34,13 +34,15 @@ ChartJS.register(
 const AdminDashboard = () => {
   const { user } = useSelector((state) => state.auth);
   const { users } = useSelector((state) => state.user);
-  const { books } = useSelector((state) => state.book);
+  const { books, totalBooks: totalBooksFromStore } = useSelector((state) => state.book);
   const { allBorrowedBooks } = useSelector((state) => state.borrow);
   const { settingPopup } = useSelector((state) => state.popup);
 
   const [totalUsers, setTotalUsers] = useState(0);
   const [totalAdmin, setTotalAdmin] = useState(0);
-  const [totalBooks, setTotalBooks] = useState((books && books.length) || 0);
+  const [totalBooks, setTotalBooks] = useState(
+    totalBooksFromStore || (books && books.length) || 0
+  );
   const [totalBorrowedBooks, setTotalBorrowedBooks] = useState(0);
   const [totalReturnedBooks, setTotalReturnedBooks] = useState(0);
 
@@ -49,6 +51,7 @@ const AdminDashboard = () => {
     let numberOfAdmins = users.filter((user) => user.role === "Admin");
     setTotalUsers(numberOfUsers.length);
     setTotalAdmin(numberOfAdmins.length);
+    setTotalBooks(totalBooksFromStore || (books && books.length) || 0);
 
     let numberOfTotalBorrowedBooks = allBorrowedBooks.filter(
       (book) => book.returnDate === null
@@ -60,7 +63,7 @@ const AdminDashboard = () => {
 
     setTotalBorrowedBooks(numberOfTotalBorrowedBooks.length);
     setTotalReturnedBooks(numberOfTotalReturnedBooks.length);
-  }, [users, allBorrowedBooks]);
+  }, [users, allBorrowedBooks, books, totalBooksFromStore]);
 
   // Màu chủ đạo: #C41526 (đỏ)
   const data = {
