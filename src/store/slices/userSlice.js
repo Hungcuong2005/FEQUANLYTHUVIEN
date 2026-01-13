@@ -3,6 +3,11 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import { toggleAddNewAdminPopup } from "./popUpSlice";
 
+const API_BASE =
+  import.meta?.env?.VITE_API_BASE_URL || "http://localhost:4000";
+
+const USER_API = `${API_BASE}/api/v1/user`;
+
 const userSlice = createSlice({
   name: "user",
   initialState: {
@@ -33,50 +38,59 @@ const userSlice = createSlice({
   },
 });
 
-export const fetchAllUsers = () => async (dispatch) => {
+/**
+ * ✅ Fetch users (CHỈ user đã verify)
+ * @param {"active"|"deleted"} status
+ *  - "active": Chưa xóa
+ *  - "deleted": Đã xóa
+ */
+export const fetchAllUsers = (status = "active") => async (dispatch) => {
   dispatch(userSlice.actions.fetchAllUsersRequest());
 
-  await axios
-    .get("http://localhost:4000/api/v1/user/all", {
+  try {
+    const safeStatus = encodeURIComponent(status);
+
+    const { data } = await axios.get(`${USER_API}/all?status=${safeStatus}`, {
       withCredentials: true,
-    })
-    .then((res) => {
-      dispatch(
-        userSlice.actions.fetchAllUsersSuccess(res.data.users)
-      );
-    })
-    .catch((err) => {
-      dispatch(
-        userSlice.actions.fetchAllUsersFailed(
-          err.response.data.message
-        )
-      );
     });
+
+    dispatch(userSlice.actions.fetchAllUsersSuccess(data.users));
+  } catch (err) {
+    dispatch(userSlice.actions.fetchAllUsersFailed());
+    toast.error(
+      err?.response?.data?.message || "Không thể tải danh sách người dùng."
+    );
+  }
 };
 
-export const addNewAdmin = (data) => async (dispatch) => {
-  dispatch(userSlice.actions.addNewAdminRequest());
+/**
+ * ✅ Add new admin
+ * @param {FormData} data
+ * @param {"active"|"deleted"} refreshStatus - tab cần refresh sau khi thêm (mặc định "active")
+ */
+export const addNewAdmin =
+  (data, refreshStatus = "active") =>
+  async (dispatch) => {
+    dispatch(userSlice.actions.addNewAdminRequest());
 
-  await axios
-    .post(
-      "http://localhost:4000/api/v1/user/add/new-admin",
-      data,
-      {
+    try {
+      const res = await axios.post(`${USER_API}/add/new-admin`, data, {
         withCredentials: true,
         headers: {
           "Content-Type": "multipart/form-data",
         },
-      }
-    )
-    .then((res) => {
+      });
+
       dispatch(userSlice.actions.addNewAdminSuccess());
       toast.success(res.data.message);
       dispatch(toggleAddNewAdminPopup());
-    })
-    .catch((err) => {
+
+      // 👉 refresh lại danh sách user theo tab hiện tại
+      dispatch(fetchAllUsers(refreshStatus));
+    } catch (err) {
       dispatch(userSlice.actions.addNewAdminFailed());
-      toast.error(err.response.data.message);
-    });
-};
+      toast.error(err?.response?.data?.message || "Thêm admin thất bại.");
+    }
+  };
 
 export default userSlice.reducer;
