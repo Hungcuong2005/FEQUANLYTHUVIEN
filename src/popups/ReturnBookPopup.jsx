@@ -1,14 +1,34 @@
-import React from "react";
+import React, { useMemo, useState } from "react";
 import { useDispatch } from "react-redux";
 import { returnBook } from "../store/slices/borrowSlice";
 import { toggleReturnBookPopup } from "../store/slices/popUpSlice";
+import PaymentMethodPopup from "./PaymentMethodPopup";
 
-const ReturnBookPopup = ({ bookId, email }) => {
+
+const ReturnBookPopup = ({ bookId, email, amount = 0 }) => {
   const dispatch = useDispatch();
+  const [showPayment, setShowPayment] = useState(false);
 
-  const handleReturnBook = (e) => {
+  const moneyVND = useMemo(() => {
+    if (typeof amount === "number") return `${amount.toLocaleString("vi-VN")}₫`;
+    if (amount === null || amount === undefined) return "—";
+    return `${amount}₫`;
+  }, [amount]);
+
+  // Bấm "Trả sách" -> mở popup chọn phương thức thanh toán
+  const handleOpenPayment = (e) => {
     e.preventDefault();
+    setShowPayment(true);
+  };
+
+  // Xác nhận thanh toán -> thực hiện trả sách
+  const handleConfirmPayment = (method) => {
+    // Nếu sau này bạn muốn gửi method lên backend thì sửa action/endpoint,
+    // còn hiện tại chỉ dùng UI và vẫn gọi returnBook như cũ.
     dispatch(returnBook(email, bookId));
+
+    // đóng cả 2 popup
+    setShowPayment(false);
     dispatch(toggleReturnBookPopup());
   };
 
@@ -17,11 +37,16 @@ const ReturnBookPopup = ({ bookId, email }) => {
       <div className="fixed inset-0 bg-black/50 p-5 flex items-center justify-center z-50">
         <div className="w-full bg-white rounded-xl shadow-xl md:w-1/3 overflow-hidden border-t-4 border-[#C41526]">
           <div className="p-6">
-            <h3 className="text-xl font-bold mb-4 text-[#C41526]">
+            <h3 className="text-xl font-bold mb-2 text-[#C41526]">
               Xác nhận trả sách
             </h3>
 
-            <form onSubmit={handleReturnBook}>
+            <p className="text-sm text-gray-600 mb-4">
+              Phí cần thanh toán:{" "}
+              <span className="font-semibold text-gray-900">{moneyVND}</span>
+            </p>
+
+            <form onSubmit={handleOpenPayment}>
               <div className="mb-4">
                 <label className="block text-gray-900 font-medium">
                   Email người mượn
@@ -56,6 +81,14 @@ const ReturnBookPopup = ({ bookId, email }) => {
           </div>
         </div>
       </div>
+
+      {showPayment && (
+        <PaymentMethodPopup
+          amount={amount}
+          onClose={() => setShowPayment(false)}
+          onConfirm={handleConfirmPayment}
+        />
+      )}
     </>
   );
 };

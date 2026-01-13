@@ -13,6 +13,13 @@ import ReturnBookPopup from "../popups/ReturnBookPopup";
 import Header from "../layout/Header";
 
 const Catalog = () => {
+  /**
+   * ================================
+   * 🧠 REDUX: DISPATCH & SELECTOR
+   * ================================
+   * - dispatch: gọi action (fetch, reset, toggle popup,...)
+   * - selector: lấy state từ store
+   */
   const dispatch = useDispatch();
 
   const { returnBookPopup } = useSelector((state) => state.popup);
@@ -20,8 +27,22 @@ const Catalog = () => {
     (state) => state.borrow
   );
 
+  /**
+   * ================================
+   * 🎛️ FILTER STATE (UI)
+   * ================================
+   * - borrowed: danh sách đang mượn (chưa quá hạn)
+   * - overdue : danh sách quá hạn
+   */
   const [filter, setFilter] = useState("borrowed");
 
+  /**
+   * ================================
+   * 🧾 FORMAT DATE HELPERS
+   * ================================
+   * - formatDateAndTime: dd-mm-yyyy HH:mm:ss
+   * - formatDate: dd-mm-yyyy
+   */
   const formatDateAndTime = (timeStamp) => {
     const date = new Date(timeStamp);
 
@@ -47,16 +68,21 @@ const Catalog = () => {
     ).padStart(2, "0")}-${String(date.getFullYear())}`;
   };
 
-  // ===== FILTER BOOKS =====
+  /**
+   * ================================
+   * 📌 FILTER BOOKS (LOGIC)
+   * ================================
+   * - currentDate: thời điểm hiện tại
+   * - borrowedBooks: dueDate > currentDate (chưa quá hạn)
+   * - overdueBooks : dueDate <= currentDate (đã quá hạn)
+   */
   const currentDate = new Date();
 
-  // Đang mượn (chưa quá hạn)
   const borrowedBooks = allBorrowedBooks?.filter((book) => {
     const dueDate = new Date(book.dueDate);
     return dueDate > currentDate;
   });
 
-  // Quá hạn
   const overdueBooks = allBorrowedBooks?.filter((book) => {
     const dueDate = new Date(book.dueDate);
     return dueDate <= currentDate;
@@ -64,17 +90,56 @@ const Catalog = () => {
 
   const booksToDisplay = filter === "borrowed" ? borrowedBooks : overdueBooks;
 
-  // ===== RETURN BOOK POPUP =====
+  /**
+   * ================================
+   * 🪟 RETURN BOOK POPUP STATE
+   * ================================
+   * - email         : email người mượn
+   * - borrowedBookId: id sách (đang truyền vào ReturnBookPopup)
+   * - amount        : số tiền hiển thị khi thanh toán (price + fine)
+   *
+   * NOTE:
+   * - amount dùng để ReturnBookPopup -> Payment popup hiển thị đúng tiền.
+   */
   const [email, setEmail] = useState("");
   const [borrowedBookId, setBorrowedBookId] = useState("");
+  const [amount, setAmount] = useState(0);
 
-  const openReturnBookPopup = (bookId, email) => {
-    setBorrowedBookId(bookId);
-    setEmail(email);
+  /**
+   * ================================
+   * ✅ OPEN RETURN POPUP
+   * ================================
+   * Khi user click icon "Trả sách":
+   * - Set bookId + email
+   * - Tính amount (price + fine nếu có)
+   * - Bật popup ReturnBookPopup
+   */
+  const openReturnBookPopup = (borrowDoc) => {
+    setBorrowedBookId(borrowDoc.book);
+    setEmail(borrowDoc?.user?.email || "");
+
+    const price = typeof borrowDoc?.price === "number" ? borrowDoc.price : 0;
+    const fine = typeof borrowDoc?.fine === "number" ? borrowDoc.fine : 0;
+
+    // ✅ tiền hiển thị thanh toán (bạn có thể đổi công thức ở đây nếu muốn)
+    setAmount(price + fine);
+
     dispatch(toggleReturnBookPopup());
   };
 
-  // ===== EFFECT =====
+  /**
+   * ================================
+   * 🔁 EFFECT: TOAST + REFRESH DATA
+   * ================================
+   * - Nếu thành công (message):
+   *   + toast success
+   *   + refetch danh sách sách + danh sách mượn
+   *   + reset slices tránh toast lặp
+   *
+   * - Nếu lỗi (error):
+   *   + toast error
+   *   + reset borrow slice
+   */
   useEffect(() => {
     if (message) {
       toast.success(message);
@@ -88,22 +153,25 @@ const Catalog = () => {
       toast.error(error);
       dispatch(resetBorrowSlice());
     }
-  }, [dispatch, error, loading]);
+  }, [dispatch, error, loading, message]);
 
   return (
     <>
       <main className="relative flex-1 p-6 pt-28">
         <Header />
 
-        {/* Filter Buttons */}
+        {/* ================================
+            🎚️ FILTER BUTTONS (UI)
+           ================================ */}
         <header className="flex flex-col gap-3 sm:flex-row md:items-center">
           <button
             className={`relative rounded sm:rounded-tr-none sm:rounded-br-none sm:rounded-tl-lg sm:rounded-bl-lg
             text-center border-2 font-semibold py-2 w-full sm:w-72 transition
-            ${filter === "borrowed"
+            ${
+              filter === "borrowed"
                 ? "bg-[#C41526] text-white border-[#C41526]"
                 : "bg-gray-200 text-black border-gray-200 hover:bg-gray-300"
-              }`}
+            }`}
             onClick={() => setFilter("borrowed")}
           >
             Sách đang mượn
@@ -112,16 +180,20 @@ const Catalog = () => {
           <button
             className={`relative rounded sm:rounded-tl-none sm:rounded-bl-none sm:rounded-tr-lg sm:rounded-br-lg
             text-center border-2 font-semibold py-2 w-full sm:w-72 transition
-            ${filter === "overdue"
+            ${
+              filter === "overdue"
                 ? "bg-[#C41526] text-white border-[#C41526]"
                 : "bg-gray-200 text-black border-gray-200 hover:bg-gray-300"
-              }`}
+            }`}
             onClick={() => setFilter("overdue")}
           >
             Danh sách quá hạn
           </button>
         </header>
 
+        {/* ================================
+            📋 TABLE: BOOKS LIST
+           ================================ */}
         {booksToDisplay && booksToDisplay.length > 0 ? (
           <div className="mt-6 overflow-auto bg-white rounded-md shadow-lg border-t-4 border-[#C41526]">
             <table className="min-w-full border-collapse">
@@ -151,8 +223,6 @@ const Catalog = () => {
                 </tr>
               </thead>
 
-
-
               <tbody>
                 {booksToDisplay.map((book, index) => (
                   <tr
@@ -169,6 +239,13 @@ const Catalog = () => {
                       {typeof book.price === "number"
                         ? `${book.price.toLocaleString("vi-VN")}₫`
                         : book.price}
+
+                      {/* Nếu có fine thì hiển thị thêm (tuỳ bạn) */}
+                      {typeof book.fine === "number" && book.fine > 0 && (
+                        <div className="text-xs text-gray-600">
+                          Phạt: {book.fine.toLocaleString("vi-VN")}₫
+                        </div>
+                      )}
                     </td>
 
                     <td className="px-4 py-2">{formatDate(book.dueDate)}</td>
@@ -183,9 +260,7 @@ const Catalog = () => {
                       ) : (
                         <PiKeyReturnBold
                           className="w-6 h-6 cursor-pointer text-[#C41526] hover:opacity-80 transition"
-                          onClick={() =>
-                            openReturnBookPopup(book.book, book?.user?.email)
-                          }
+                          onClick={() => openReturnBookPopup(book)}
                           title="Xác nhận trả sách"
                         />
                       )}
@@ -203,8 +278,13 @@ const Catalog = () => {
         )}
       </main>
 
+      {/* ================================
+          🪟 RENDER RETURN BOOK POPUP
+         ================================
+         - Truyền bookId, email, amount xuống popup để hiển thị tiền thanh toán
+      */}
       {returnBookPopup && (
-        <ReturnBookPopup bookId={borrowedBookId} email={email} />
+        <ReturnBookPopup bookId={borrowedBookId} email={email} amount={amount} />
       )}
     </>
   );
