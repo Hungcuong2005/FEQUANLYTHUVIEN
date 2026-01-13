@@ -122,8 +122,8 @@ const UserDashboard = ({setSelectedComponent}) => {
             {/* Quote */}
             <div className="bg-white p-7 text-lg sm:text-xl xl:text-3xl 2xl:text-4xl min-h-52 font-semibold relative flex-[3] flex justify-center items-center rounded-2xl border border-[#FDE8EA]">
               <h4 className="overflow-y-hidden text-[#C41526] text-center">
-                “Đọc sách mỗi ngày là cách đơn giản nhất để nuôi dưỡng tri thức
-                và phát triển bản thân.”
+                {/* “Đọc sách mỗi ngày là cách đơn giản nhất để nuôi dưỡng tri thức
+                và phát triển bản thân.” */}
               </h4>
               <p className="text-gray-700 text-sm sm:text-lg absolute right-[35px] sm:right-[78px] bottom-[10px]">
                 PHC - 20235286

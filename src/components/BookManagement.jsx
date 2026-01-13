@@ -6,7 +6,6 @@ import {
   toggleReadBookPopup,
   toggleRecordBookPopup,
 } from "../store/slices/popUpSlice";
-import { toast } from "react-toastify";
 import { fetchAllBooks, resetBookSlice } from "../store/slices/bookSlice";
 import {
   fetchAllBorrowedBooks,
@@ -79,11 +78,24 @@ const BookManagement = () => {
       params.maxPrice = maxPrice;
     }
     return params;
-  }, [page, limit, sortOption, searchedKeyword, availabilityFilter, minPrice, maxPrice]);
+  }, [
+    page,
+    limit,
+    sortOption,
+    searchedKeyword,
+    availabilityFilter,
+    minPrice,
+    maxPrice,
+  ]);
 
+  /**
+   * ✅ FIX DUPLICATE TOAST:
+   * - Toast đã được xử lý trong bookSlice/borrowSlice (thunks).
+   * - Trang này chỉ làm nhiệm vụ reload data + reset state.
+   * - KHÔNG toast ở đây nữa để tránh hiển thị 2 popup.
+   */
   useEffect(() => {
     if (message || borrowSliceMessage) {
-      toast.success(message || borrowSliceMessage);
       dispatch(fetchAllBooks(queryParams));
       dispatch(fetchAllBorrowedBooks());
       dispatch(resetBookSlice());
@@ -91,7 +103,6 @@ const BookManagement = () => {
     }
 
     if (error || borrowSliceError) {
-      toast.error(error || borrowSliceError);
       dispatch(resetBookSlice());
       dispatch(resetBorrowSlice());
     }
@@ -99,9 +110,7 @@ const BookManagement = () => {
     dispatch,
     message,
     error,
-    loading,
     borrowSliceError,
-    borrowSliceLoading,
     borrowSliceMessage,
     queryParams,
   ]);
@@ -143,60 +152,60 @@ const BookManagement = () => {
               </p>
             </div>
 
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                <div className="flex flex-1 flex-col gap-3 rounded-xl border border-[#FDE8EA] bg-[#FFFDFD] p-3 sm:p-4">
-                  <div className="text-xs uppercase tracking-wide text-gray-500 font-semibold">
-                    Tìm kiếm & lọc
-                  </div>
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                    {/* Search */}
-                    <div className="relative w-full sm:w-72">
-                      <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                      <input
-                        type="text"
-                        placeholder="Tìm theo tên / tác giả..."
-                        className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-0 focus:border-gray-300"
-                        value={searchedKeyword}
-                        onChange={(e) => {
-                          setSearchedKeyword(e.target.value);
-                          setPage(1);
-                        }}
-                      />
-                    </div>
-
-                    <select
-                      className="w-full sm:w-auto px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm focus:outline-none focus:ring-0 focus:border-gray-300"
-                      value={availabilityFilter}
-                      onChange={(e) => {
-                        setAvailabilityFilter(e.target.value);
-                        setPage(1);
-                      }}
-                    >
-                      <option value="all">Tất cả trạng thái</option>
-                      <option value="true">Còn sách</option>
-                      <option value="false">Hết sách</option>
-                    </select>
-
-                    <select
-                      className="w-full sm:w-auto px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm focus:outline-none focus:ring-0 focus:border-gray-300"
-                      value={sortOption}
-                      onChange={(e) => {
-                        setSortOption(e.target.value);
-                        setPage(1);
-                      }}
-                    >
-                      <option value="newest">Mới nhất</option>
-                      <option value="price_asc">Giá tăng dần</option>
-                      <option value="price_desc">Giá giảm dần</option>
-                      <option value="quantity_desc">Còn nhiều</option>
-                      <option value="quantity_asc">Còn ít</option>
-                    </select>
-                  </div>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+              <div className="flex flex-1 flex-col gap-3 rounded-xl border border-[#FDE8EA] bg-[#FFFDFD] p-3 sm:p-4">
+                <div className="text-xs uppercase tracking-wide text-gray-500 font-semibold">
+                  Tìm kiếm & lọc
                 </div>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                  {/* Search */}
+                  <div className="relative w-full sm:w-72">
+                    <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      placeholder="Tìm theo tên / tác giả..."
+                      className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-0 focus:border-gray-300"
+                      value={searchedKeyword}
+                      onChange={(e) => {
+                        setSearchedKeyword(e.target.value);
+                        setPage(1);
+                      }}
+                    />
+                  </div>
 
-                {/* Add */}
-                {isAuthenticated && user?.role === "Admin" && (
-                  <button
+                  <select
+                    className="w-full sm:w-auto px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm focus:outline-none focus:ring-0 focus:border-gray-300"
+                    value={availabilityFilter}
+                    onChange={(e) => {
+                      setAvailabilityFilter(e.target.value);
+                      setPage(1);
+                    }}
+                  >
+                    <option value="all">Tất cả trạng thái</option>
+                    <option value="true">Còn sách</option>
+                    <option value="false">Hết sách</option>
+                  </select>
+
+                  <select
+                    className="w-full sm:w-auto px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm focus:outline-none focus:ring-0 focus:border-gray-300"
+                    value={sortOption}
+                    onChange={(e) => {
+                      setSortOption(e.target.value);
+                      setPage(1);
+                    }}
+                  >
+                    <option value="newest">Mới nhất</option>
+                    <option value="price_asc">Giá tăng dần</option>
+                    <option value="price_desc">Giá giảm dần</option>
+                    <option value="quantity_desc">Còn nhiều</option>
+                    <option value="quantity_asc">Còn ít</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Add */}
+              {isAuthenticated && user?.role === "Admin" && (
+                <button
                   type="button"
                   onClick={() => dispatch(toggleAddBookPopup())}
                   className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-[#C41526] text-white font-semibold hover:bg-[#A81220] transition"
@@ -263,14 +272,13 @@ const BookManagement = () => {
                   </tr>
                 </thead>
 
-
-
                 <tbody>
                   {searchedBooks.map((book, index) => (
                     <tr
                       key={book._id}
-                      className={`border-t border-gray-100 ${(index + 1) % 2 === 0 ? "bg-gray-50" : "bg-white"
-                        } hover:bg-[#FFF5F6] transition`}
+                      className={`border-t border-gray-100 ${
+                        (index + 1) % 2 === 0 ? "bg-gray-50" : "bg-white"
+                      } hover:bg-[#FFF5F6] transition`}
                     >
                       <td className="px-4 py-3">
                         {(page - 1) * limit + index + 1}

@@ -203,8 +203,8 @@ const AdminDashboard = () => {
             {/* Quote */}
             <div className="hidden xl:flex bg-white p-7 text-lg sm:text-xl xl:text-3xl 2xl:text-4xl min-h-52 font-semibold relative flex-[3] justify-center items-center rounded-2xl border border-[#FDE8EA]">
               <h4 className="overflow-y-hidden text-[#C41526]">
-                "Hành trình đọc sách nuôi dưỡng sự trưởng thành, mở ra con đường hướng tới
-                sự xuất sắc và hoàn thiện bản thân."
+                {/* "Hành trình đọc sách nuôi dưỡng sự trưởng thành, mở ra con đường hướng tới
+                sự xuất sắc và hoàn thiện bản thân." */}
               </h4>
               <p className="text-gray-700 text-sm sm:text-lg absolute right-[35px] sm:right-[78px] bottom-[10px]">
                 PHC - 20235286
