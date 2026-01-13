@@ -167,11 +167,10 @@ const Catalog = () => {
           <button
             className={`relative rounded sm:rounded-tr-none sm:rounded-br-none sm:rounded-tl-lg sm:rounded-bl-lg
             text-center border-2 font-semibold py-2 w-full sm:w-72 transition
-            ${
-              filter === "borrowed"
+            ${filter === "borrowed"
                 ? "bg-[#C41526] text-white border-[#C41526]"
                 : "bg-gray-200 text-black border-gray-200 hover:bg-gray-300"
-            }`}
+              }`}
             onClick={() => setFilter("borrowed")}
           >
             Sách đang mượn
@@ -180,11 +179,10 @@ const Catalog = () => {
           <button
             className={`relative rounded sm:rounded-tl-none sm:rounded-bl-none sm:rounded-tr-lg sm:rounded-br-lg
             text-center border-2 font-semibold py-2 w-full sm:w-72 transition
-            ${
-              filter === "overdue"
+            ${filter === "overdue"
                 ? "bg-[#C41526] text-white border-[#C41526]"
                 : "bg-gray-200 text-black border-gray-200 hover:bg-gray-300"
-            }`}
+              }`}
             onClick={() => setFilter("overdue")}
           >
             Danh sách quá hạn
@@ -284,8 +282,14 @@ const Catalog = () => {
          - Truyền bookId, email, amount xuống popup để hiển thị tiền thanh toán
       */}
       {returnBookPopup && (
-        <ReturnBookPopup bookId={borrowedBookId} email={email} amount={amount} />
+        <ReturnBookPopup
+          bookId={borrowedBookId}
+          email={email}
+          amount={amount}
+          apiBaseUrl="http://localhost:4000"
+        />
       )}
+
     </>
   );
 };

@@ -1,11 +1,16 @@
 import React, { useMemo, useState } from "react";
 import { useDispatch } from "react-redux";
-import { returnBook } from "../store/slices/borrowSlice";
 import { toggleReturnBookPopup } from "../store/slices/popUpSlice";
 import PaymentMethodPopup from "./PaymentMethodPopup";
 
+const ReturnBookPopup = ({
+  bookId,
+  email,
+  amount = 0,
 
-const ReturnBookPopup = ({ bookId, email, amount = 0 }) => {
+  // ✅ nếu backend chạy khác domain (vd http://localhost:8386)
+  apiBaseUrl = "",
+}) => {
   const dispatch = useDispatch();
   const [showPayment, setShowPayment] = useState(false);
 
@@ -19,17 +24,6 @@ const ReturnBookPopup = ({ bookId, email, amount = 0 }) => {
   const handleOpenPayment = (e) => {
     e.preventDefault();
     setShowPayment(true);
-  };
-
-  // Xác nhận thanh toán -> thực hiện trả sách
-  const handleConfirmPayment = (method) => {
-    // Nếu sau này bạn muốn gửi method lên backend thì sửa action/endpoint,
-    // còn hiện tại chỉ dùng UI và vẫn gọi returnBook như cũ.
-    dispatch(returnBook(email, bookId));
-
-    // đóng cả 2 popup
-    setShowPayment(false);
-    dispatch(toggleReturnBookPopup());
   };
 
   return (
@@ -85,8 +79,13 @@ const ReturnBookPopup = ({ bookId, email, amount = 0 }) => {
       {showPayment && (
         <PaymentMethodPopup
           amount={amount}
-          onClose={() => setShowPayment(false)}
-          onConfirm={handleConfirmPayment}
+          bookId={bookId}
+          email={email}
+          apiBaseUrl={apiBaseUrl}
+          onClose={() => {
+            setShowPayment(false);
+            dispatch(toggleReturnBookPopup()); // đóng luôn popup trả sách
+          }}
         />
       )}
     </>
