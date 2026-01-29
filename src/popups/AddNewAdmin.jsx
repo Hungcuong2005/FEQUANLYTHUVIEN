@@ -30,11 +30,12 @@ const AddNewAdmin = () => {
   const handleAddNewAdmin = (e) => {
     e.preventDefault();
 
+    // ✅ Tạo FormData đúng cách
     const formData = new FormData();
     formData.append("name", name);
     formData.append("email", email);
     formData.append("password", password);
-    formData.append("avatar", avatar);
+    formData.append("avatar", avatar); // ← Key phải khớp với backend: .single("avatar")
 
     dispatch(addNewAdmin(formData));
   };

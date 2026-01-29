@@ -12,6 +12,7 @@ import { fetchAllBooks, resetBookSlice } from "../store/slices/bookSlice";
 import ReturnBookPopup from "../popups/ReturnBookPopup";
 import Header from "../layout/Header";
 
+
 const Catalog = () => {
   const dispatch = useDispatch();
 
