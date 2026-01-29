@@ -5,6 +5,8 @@ import { addBook } from "../store/slices/bookSlice";
 import { toggleAddBookPopup } from "../store/slices/popUpSlice";
 import { toast } from "react-toastify";
 
+const MAX_CATEGORIES = 3;
+
 const AddBookPopup = () => {
   const dispatch = useDispatch();
   const { loading } = useSelector((state) => state.book);
@@ -21,6 +23,9 @@ const AddBookPopup = () => {
   const [quantity, setQuantity] = useState("1");
   const [description, setDescription] = useState("");
 
+  // ✅ Category list + selected categories (tối đa 3)
+  const [allCategories, setAllCategories] = useState([]);
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState([]);
 
   // ✅ Toggle bật/tắt chỉnh sửa khi ISBN đã tồn tại
   const [allowEdit, setAllowEdit] = useState(false);
@@ -40,7 +45,41 @@ const AddBookPopup = () => {
   const disabledInputClass =
     "w-full px-4 py-2 border-2 border-gray-200 rounded-md bg-gray-100 cursor-not-allowed";
 
-  const checkIsbn = async ({ force = false } = {}) => {
+  // ✅ load categories
+  const fetchCategories = async () => {
+    try {
+      const res = await axios.get(`${apiBaseUrl}/api/v1/category/all`, {
+        withCredentials: true,
+      });
+      setAllCategories(res?.data?.categories || []);
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Không tải được thể loại.");
+    }
+  };
+
+  useEffect(() => {
+    fetchCategories();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const applyBookCategoriesFromAPI = (book) => {
+    const raw =
+      book?.categories ||
+      book?.categoryIds ||
+      book?.categoriesIds ||
+      book?.category ||
+      [];
+
+    const ids = Array.isArray(raw)
+      ? raw
+        .map((x) => (typeof x === "string" ? x : x?._id))
+        .filter(Boolean)
+      : [];
+
+    setSelectedCategoryIds(ids.slice(0, MAX_CATEGORIES));
+  };
+
+  const checkIsbn = async ({ force = false, signal } = {}) => {
     const normalized = normalizeIsbn(isbn);
 
     if (!normalized) {
@@ -57,29 +96,32 @@ const AddBookPopup = () => {
     try {
       const { data } = await axios.get(
         `${apiBaseUrl}/api/v1/book/isbn/${normalized}`,
-        { withCredentials: true }
+        { withCredentials: true, signal }
       );
 
       if (data?.exists && data?.book) {
         setIsbnStatus("exists");
 
-        // ✅ Đổ thông tin đầu sách từ DB
         setTitle(data.book.title || "");
         setAuthor(data.book.author || "");
         setDescription(String(data.book.description || ""));
         if (typeof data.book.price === "number") setPrice(String(data.book.price));
-        
 
-        // ✅ Mặc định: KHÓA chỉnh sửa, người dùng có thể bấm bật
+        // ✅ đổ thể loại nếu backend trả về
+        applyBookCategoriesFromAPI(data.book);
+
         setAllowEdit(false);
-
         return "exists";
       }
 
       setIsbnStatus("new");
-      setAllowEdit(true); // ISBN mới → cho nhập
+      setAllowEdit(true);
       return "new";
     } catch (err) {
+      if (err?.name === "CanceledError" || err?.code === "ERR_CANCELED") {
+        return isbnStatus;
+      }
+
       setIsbnStatus("idle");
       setAllowEdit(true);
       toast.error(err?.response?.data?.message || "Không kiểm tra được ISBN.");
@@ -88,22 +130,36 @@ const AddBookPopup = () => {
   };
 
   useEffect(() => {
+    const controller = new AbortController();
+
     const t = setTimeout(() => {
       const normalized = normalizeIsbn(isbn);
       if (!normalized) return;
-      checkIsbn();
+      checkIsbn({ signal: controller.signal });
     }, 450);
 
-    return () => clearTimeout(t);
+    return () => {
+      clearTimeout(t);
+      controller.abort();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isbn]);
 
-  // ✅ Có thể sửa metadata nếu:
-  // - ISBN mới (new) hoặc chưa nhập ISBN (idle)  → sửa được
-  // - ISBN đã tồn tại (exists) nhưng người dùng bật allowEdit
   const canEditMeta = isbnStatus !== "exists" || allowEdit;
-  // ✅ Cho phép chỉnh sửa mô tả ngay cả khi ISBN đã tồn tại (không bị bôi xám)
   const canEditDescription = canEditMeta || isbnStatus === "exists";
+
+  // ✅ toggle select categories (max 3)
+  const toggleCategory = (id) => {
+    setSelectedCategoryIds((prev) => {
+      const exists = prev.includes(id);
+      if (exists) return prev.filter((x) => x !== id);
+      if (prev.length >= MAX_CATEGORIES) {
+        toast.info(`Mỗi sách tối đa ${MAX_CATEGORIES} thể loại.`);
+        return prev;
+      }
+      return [...prev, id];
+    });
+  };
 
   const handleAddBook = async (e) => {
     e?.preventDefault();
@@ -125,31 +181,46 @@ const AddBookPopup = () => {
 
     const q = Math.max(parseInt(quantity, 10) || 1, 1);
 
-    // ✅ Nếu ISBN đã tồn tại và KHÔNG bật chỉnh sửa → mặc định chỉ thêm bản sao
-    // Nhưng vẫn cho phép sửa "Mô tả" (nếu bạn nhập) mà không cần bật chỉnh sửa.
+    // ✅ ISBN tồn tại và KHÔNG bật chỉnh sửa → mặc định chỉ thêm bản sao
     if (statusToUse === "exists" && !allowEdit) {
       const payload = {
         isbn: normalized || "",
         quantity: q,
-        description, // ✅ cho phép update mô tả nếu backend hỗ trợ
+        description,
+        categories: (selectedCategoryIds || []).slice(0, MAX_CATEGORIES),
       };
       dispatch(addBook(payload));
       return;
     }
 
-    // ✅ Nếu ISBN mới hoặc có bật chỉnh sửa → validate đủ thông tin
     const trimmedTitle = title.trim();
     const trimmedAuthor = author.trim();
+
+
 
     if (!trimmedTitle || !trimmedAuthor) {
       toast.error("Vui lòng nhập Tên sách và Tác giả.");
       return;
     }
 
+
+
     const priceValue = Number(price);
     if (Number.isNaN(priceValue) || priceValue < 0) {
       toast.error("Giá mượn không hợp lệ.");
       return;
+    }
+
+    const categoriesToSend = (selectedCategoryIds || []).slice(0, MAX_CATEGORIES);
+
+    if (categoriesToSend.length > 0) {
+      const invalidCats = categoriesToSend.filter(
+        id => !allCategories.some(c => c._id === id)
+      );
+      if (invalidCats.length > 0) {
+        toast.error("Có thể loại không hợp lệ.");
+        return;
+      }
     }
 
     const payload = {
@@ -159,6 +230,7 @@ const AddBookPopup = () => {
       price: priceValue,
       quantity: q,
       description,
+      categories: categoriesToSend,  // ✅ Dùng biến đã validate
     };
 
     dispatch(addBook(payload));
@@ -193,7 +265,6 @@ const AddBookPopup = () => {
               )}
             </div>
 
-            {/* ✅ Nút bật/tắt chỉnh sửa khi ISBN đã tồn tại */}
             {isbnStatus === "exists" ? (
               <button
                 type="button"
@@ -207,10 +278,11 @@ const AddBookPopup = () => {
             ) : null}
           </div>
 
-          {/* ✅ CHỈ DÙNG onSubmit để tránh gọi 2 lần */}
           <form onSubmit={handleAddBook}>
             <div className="mb-4">
-              <label className="block text-gray-900 font-medium">ISBN (khuyến nghị)</label>
+              <label className="block text-gray-900 font-medium">
+                ISBN (khuyến nghị)
+              </label>
               <input
                 type="text"
                 value={isbn}
@@ -258,7 +330,9 @@ const AddBookPopup = () => {
             </div>
 
             <div className="mb-4">
-              <label className="block text-gray-900 font-medium">Giá mượn (phí mượn sách)</label>
+              <label className="block text-gray-900 font-medium">
+                Giá mượn (phí mượn sách)
+              </label>
               <input
                 type="number"
                 value={price}
@@ -287,7 +361,58 @@ const AddBookPopup = () => {
               </p>
             </div>
 
-      
+            {/* ✅ Thể loại (tối đa 3) */}
+            <div className="mb-4">
+              <label className="block text-gray-900 font-medium">
+                Thể loại (tối đa {MAX_CATEGORIES})
+              </label>
+
+              <div
+                className={`mt-2 border-2 rounded-md p-3 ${canEditMeta
+                  ? "border-gray-300 bg-white"
+                  : "border-gray-200 bg-gray-100 cursor-not-allowed"
+                  }`}
+              >
+                {allCategories.length === 0 ? (
+                  <p className="text-sm text-gray-500">
+                    Chưa tải được danh sách thể loại.
+                  </p>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {allCategories.map((c) => {
+                      const checked = selectedCategoryIds.includes(c._id);
+                      return (
+                        <button
+                          key={c._id}
+                          type="button"
+                          onClick={() => {
+                            if (!canEditMeta) {
+                              toast.info("Bật chỉnh sửa để thay đổi thể loại.");
+                              return;
+                            }
+                            toggleCategory(c._id);
+                          }}
+                          className={`px-3 py-1 rounded-md text-sm font-semibold transition border ${checked
+                            ? "bg-[#EDE9FE] text-[#5B21B6] border-[#C4B5FD]"
+                            : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
+                            } ${!canEditMeta ? "opacity-60 cursor-not-allowed" : ""}`}
+                          title={c?.description || c?.name}
+                        >
+                          {c?.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                <div className="mt-2 text-xs text-gray-500">
+                  Đã chọn:{" "}
+                  <span className="font-semibold text-gray-700">
+                    {selectedCategoryIds.length}/{MAX_CATEGORIES}
+                  </span>
+                </div>
+              </div>
+            </div>
 
             <div className="mb-4">
               <label className="block text-gray-900 font-medium">Mô tả</label>
@@ -311,15 +436,13 @@ const AddBookPopup = () => {
                 Đóng
               </button>
 
-              {/* ✅ ĐỔI THÀNH submit, bỏ onClick để không chạy 2 lần */}
               <button
                 type="submit"
                 disabled={loading}
-                className={`px-4 py-2 rounded-md transition text-white ${
-                  loading
-                    ? "bg-gray-400 cursor-not-allowed"
-                    : "bg-[#C41526] hover:bg-[#A81220]"
-                }`}
+                className={`px-4 py-2 rounded-md transition text-white ${loading
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-[#C41526] hover:bg-[#A81220]"
+                  }`}
               >
                 {loading ? "Đang thêm..." : "Thêm"}
               </button>
