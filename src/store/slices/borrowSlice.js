@@ -1,19 +1,28 @@
 import { createSlice } from "@reduxjs/toolkit";
-import axios from "axios";
+import axiosClient from "../../api/axiosClient";
 import { toggleRecordBookPopup } from "./popUpSlice";
 import { toast } from "react-toastify";
 
+/**
+ * borrowSlice - Quản lý trạng thái mượn/trả sách
+ * Bao gồm:
+ * - Lấy danh sách sách đang mượn của User
+ * - Lấy toàn bộ danh sách mượn (cho Admin)
+ * - Ghi nhận mượn sách (Admin action)
+ * - Trả sách
+ * - Gia hạn sách
+ */
 const borrowSlice = createSlice({
   name: "borrow",
   initialState: {
-    loading: false,
-    error: null,
-    userBorrowedBooks: [],
-    allBorrowedBooks: [],
-    message: null,
+    loading: false,             // Trạng thái loading
+    error: null,                // Lưu lỗi
+    userBorrowedBooks: [],      // Danh sách mượn của User hiện tại
+    allBorrowedBooks: [],       // Danh sách tất cả lượt mượn (Admin dùng)
+    message: null,              // Thông báo thành công
   },
   reducers: {
-    // ===== USER BORROWED BOOKS =====
+    // --- LẤY DANH SÁCH MƯỢN CỦA USER ---
     fetchUserBorrowedBooksRequest(state) {
       state.loading = true;
       state.error = null;
@@ -29,7 +38,7 @@ const borrowSlice = createSlice({
       state.message = null;
     },
 
-    // ===== RECORD BORROW BOOK =====
+    // --- GHI NHẬN MƯỢN SÁCH (RECORD BORROW) ---
     recordBookRequest(state) {
       state.loading = true;
       state.error = null;
@@ -45,7 +54,7 @@ const borrowSlice = createSlice({
       state.message = null;
     },
 
-    // ===== ALL BORROWED BOOKS (ADMIN) =====
+    // --- LẤY TẤT CẢ DANH SÁCH MƯỢN (ADMIN) ---
     fetchAllBorrowedBooksRequest(state) {
       state.loading = true;
       state.error = null;
@@ -61,7 +70,7 @@ const borrowSlice = createSlice({
       state.message = null;
     },
 
-    // ===== RETURN BOOK =====
+    // --- TRẢ SÁCH ---
     returnBookRequest(state) {
       state.loading = true;
       state.error = null;
@@ -77,7 +86,7 @@ const borrowSlice = createSlice({
       state.message = null;
     },
 
-    // ===== RENEW BOOK =====
+    // --- GIA HẠN SÁCH ---
     renewBookRequest(state) {
       state.loading = true;
       state.error = null;
@@ -93,7 +102,7 @@ const borrowSlice = createSlice({
       state.message = null;
     },
 
-    // ===== RESET =====
+    // --- RESET CLEAN STATE ---
     resetBorrowSlice(state) {
       state.loading = false;
       state.error = null;
@@ -102,13 +111,16 @@ const borrowSlice = createSlice({
   },
 });
 
+// ==========================================
+// THUNK ACTIONS
+// ==========================================
+
+// Lấy danh sách sách đang mượn của User đăng nhập
 export const fetchUserBorrowedBooks = () => async (dispatch) => {
   dispatch(borrowSlice.actions.fetchUserBorrowedBooksRequest());
 
-  await axios
-    .get("http://localhost:4000/api/v1/borrow/my-borrowed-books", {
-      withCredentials: true,
-    })
+  await axiosClient
+    .get("/borrow/my-borrowed-books")
     .then((res) => {
       dispatch(
         borrowSlice.actions.fetchUserBorrowedBooksSuccess(
@@ -125,15 +137,13 @@ export const fetchUserBorrowedBooks = () => async (dispatch) => {
     });
 };
 
+// Admin: Lấy tất cả danh sách mượn
 export const fetchAllBorrowedBooks = () => async (dispatch) => {
   dispatch(borrowSlice.actions.fetchAllBorrowedBooksRequest());
 
-  await axios
+  await axiosClient
     .get(
-      "http://localhost:4000/api/v1/borrow/borrowed-books-by-users",
-      {
-        withCredentials: true,
-      }
+      "/borrow/borrowed-books-by-users"
     )
     .then((res) => {
       dispatch(
@@ -151,56 +161,46 @@ export const fetchAllBorrowedBooks = () => async (dispatch) => {
     });
 };
 
-// ===== RECORD BORROW BOOK - CẬP NHẬT ĐỂ GỬI copyId =====
+// Admin: Ghi nhận 1 lượt mượn mới
+// Gửi kèm copyId để xác định chính xác cuốn sách nào được mượn
 export const recordBorrowBook = (email, bookId, copyId) => async (dispatch) => {
   dispatch(borrowSlice.actions.recordBookRequest());
 
-  await axios
+  await axiosClient
     .post(
-      `http://localhost:4000/api/v1/borrow/record-borrow-book/${bookId}`,
-      { email, copyId }, // ✅ Gửi cả copyId
-      {
-        withCredentials: true,
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
+      `/borrow/record-borrow-book/${bookId}`,
+      { email, copyId } // ✅ Cần cả email người mượn và ID cuốn sách copy
     )
     .then((res) => {
       dispatch(borrowSlice.actions.recordBookSuccess(res.data.message));
 
-      // ✅ Popup thông báo thành công với mã BookCopy
+      // ✅ Hiển thị Toast thông báo mã cuốn sách vừa mượn
       const copyCode = res.data.bookCopyCode || "N/A";
       toast.success(
         `${res.data.message || "Ghi nhận mượn sách thành công!"}\nMã cuốn: ${copyCode}`,
         { toastId: `record-borrow-${bookId}-${copyId}` }
       );
 
+      // Đóng popup sau khi thành công
       dispatch(toggleRecordBookPopup());
     })
     .catch((err) => {
       const msg = err?.response?.data?.message || "Ghi nhận mượn sách thất bại!";
       dispatch(borrowSlice.actions.recordBookFailed(msg));
 
-      // ✅ Popup thông báo lỗi
+      // Thông báo lỗi
       toast.error(msg, { toastId: `record-borrow-error-${bookId}` });
     });
 };
 
-// ===== RETURN BOOK =====
+// Admin: Xác nhận trả sách
 export const returnBook = (email, id) => async (dispatch) => {
   dispatch(borrowSlice.actions.returnBookRequest());
 
-  await axios
+  await axiosClient
     .put(
-      `http://localhost:4000/api/v1/borrow/return-borrowed-book/${id}`,
-      { email },
-      {
-        withCredentials: true,
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
+      `/borrow/return-borrowed-book/${id}`,
+      { email }
     )
     .then((res) => {
       dispatch(
@@ -216,14 +216,12 @@ export const returnBook = (email, id) => async (dispatch) => {
     });
 };
 
-// ===== RENEW BOOK =====
+// User: Gia hạn sách
 export const renewBorrowedBook = (borrowId) => async (dispatch) => {
   dispatch(borrowSlice.actions.renewBookRequest());
 
-  await axios
-    .post(`http://localhost:4000/api/v1/borrow/renew/${borrowId}`, {}, {
-      withCredentials: true,
-    })
+  await axiosClient
+    .post(`/borrow/renew/${borrowId}`, {})
     .then((res) => {
       dispatch(borrowSlice.actions.renewBookSuccess(res.data.message));
     })
@@ -236,6 +234,7 @@ export const renewBorrowedBook = (borrowId) => async (dispatch) => {
     });
 };
 
+// Reset state
 export const resetBorrowSlice = () => (dispatch) => {
   dispatch(borrowSlice.actions.resetBorrowSlice());
 };

@@ -1,19 +1,30 @@
 import React, { useEffect, useRef, useState } from "react";
-import axios from "axios";
+import axiosClient from "../api/axiosClient";
 import { useDispatch, useSelector } from "react-redux";
 import { addBook } from "../store/slices/bookSlice";
 import { toggleAddBookPopup } from "../store/slices/popUpSlice";
 import { toast } from "react-toastify";
 
+// Giới hạn max thể loại chọn
 const MAX_CATEGORIES = 3;
 
+/**
+ * AddBookPopup - Popup Thêm mới sách (Admin)
+ * 
+ * Logic quan trọng:
+ * 1. Kiểm tra ISBN real-time:
+ *    - Nếu ISBN đã tồn tại -> Tự động điền thông tin (Title, Author...) và chuyển sang chế độ "Thêm bản sao" (BookCopy).
+ *    - Nếu ISBN chưa có -> Cho phép nhập mới toàn bộ để tạo đầu sách (Book) + bản sao đầu tiên.
+ * 
+ * 2. Validate:
+ *    - Bắt buộc nhập Title, Author, Price.
+ *    - Tối đa 3 thể loại.
+ */
 const AddBookPopup = () => {
   const dispatch = useDispatch();
   const { loading } = useSelector((state) => state.book);
 
-  const apiBaseUrl =
-    import.meta?.env?.VITE_API_BASE_URL || "http://localhost:4000";
-
+  // Form States
   const [isbn, setIsbn] = useState("");
   const [isbnStatus, setIsbnStatus] = useState("idle"); // idle | checking | exists | new
 
@@ -23,15 +34,17 @@ const AddBookPopup = () => {
   const [quantity, setQuantity] = useState("1");
   const [description, setDescription] = useState("");
 
-  // ✅ Category list + selected categories (tối đa 3)
+  // Category Selection
   const [allCategories, setAllCategories] = useState([]);
   const [selectedCategoryIds, setSelectedCategoryIds] = useState([]);
 
-  // ✅ Toggle bật/tắt chỉnh sửa khi ISBN đã tồn tại
+  // Chế độ chỉnh sửa: Khi ISBN đã tồn tại, mặc định sẽ khóa các ô input (chỉ thêm bản sao).
+  // Admin phải bấm "Bật chỉnh sửa" nếu muốn sửa thông tin gốc.
   const [allowEdit, setAllowEdit] = useState(false);
 
   const lastCheckedIsbnRef = useRef("");
 
+  // Chuẩn hóa ISBN (viết hoa, xóa ký tự lạ)
   const normalizeIsbn = (v) =>
     String(v || "")
       .trim()
@@ -45,12 +58,10 @@ const AddBookPopup = () => {
   const disabledInputClass =
     "w-full px-4 py-2 border-2 border-gray-200 rounded-md bg-gray-100 cursor-not-allowed";
 
-  // ✅ load categories
+  // Lấy danh sách thể loại từ server
   const fetchCategories = async () => {
     try {
-      const res = await axios.get(`${apiBaseUrl}/api/v1/category/all`, {
-        withCredentials: true,
-      });
+      const res = await axiosClient.get("/category/all");
       setAllCategories(res?.data?.categories || []);
     } catch (err) {
       toast.error(err?.response?.data?.message || "Không tải được thể loại.");
@@ -62,6 +73,7 @@ const AddBookPopup = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Helper: map dữ liệu category từ API vào state selectedCategoryIds
   const applyBookCategoriesFromAPI = (book) => {
     const raw =
       book?.categories ||
@@ -79,6 +91,10 @@ const AddBookPopup = () => {
     setSelectedCategoryIds(ids.slice(0, MAX_CATEGORIES));
   };
 
+  /**
+   * Hàm kiểm tra ISBN (Debounce)
+   * Gọi API /book/isbn/:isbn để xem sách đã có chưa
+   */
   const checkIsbn = async ({ force = false, signal } = {}) => {
     const normalized = normalizeIsbn(isbn);
 
@@ -94,28 +110,31 @@ const AddBookPopup = () => {
     lastCheckedIsbnRef.current = normalized;
 
     try {
-      const { data } = await axios.get(
-        `${apiBaseUrl}/api/v1/book/isbn/${normalized}`,
-        { withCredentials: true, signal }
+      const { data } = await axiosClient.get(
+        `/book/isbn/${normalized}`,
+        { signal }
       );
 
+      // TRƯỜNG HỢP 1: ISBN ĐÃ TỒN TẠI
       if (data?.exists && data?.book) {
         setIsbnStatus("exists");
 
+        // Auto-fill dữ liệu cũ vào form
         setTitle(data.book.title || "");
         setAuthor(data.book.author || "");
         setDescription(String(data.book.description || ""));
         if (typeof data.book.price === "number") setPrice(String(data.book.price));
 
-        // ✅ đổ thể loại nếu backend trả về
         applyBookCategoriesFromAPI(data.book);
 
+        // Mặc định khóa không cho sửa (để tránh sửa nhầm thông tin gốc)
         setAllowEdit(false);
         return "exists";
       }
 
+      // TRƯỜNG HỢP 2: ISBN MỚI TINH
       setIsbnStatus("new");
-      setAllowEdit(true);
+      setAllowEdit(true); // Cho phép nhập liệu full
       return "new";
     } catch (err) {
       if (err?.name === "CanceledError" || err?.code === "ERR_CANCELED") {
@@ -129,6 +148,7 @@ const AddBookPopup = () => {
     }
   };
 
+  // Debounce effect cho việc check ISBN
   useEffect(() => {
     const controller = new AbortController();
 
@@ -148,7 +168,7 @@ const AddBookPopup = () => {
   const canEditMeta = isbnStatus !== "exists" || allowEdit;
   const canEditDescription = canEditMeta || isbnStatus === "exists";
 
-  // ✅ toggle select categories (max 3)
+  // Toggle chọn category
   const toggleCategory = (id) => {
     setSelectedCategoryIds((prev) => {
       const exists = prev.includes(id);
@@ -161,6 +181,7 @@ const AddBookPopup = () => {
     });
   };
 
+  // Submit Form
   const handleAddBook = async (e) => {
     e?.preventDefault();
     e?.stopPropagation();
@@ -169,6 +190,7 @@ const AddBookPopup = () => {
     const normalized = normalizeIsbn(isbn);
     let statusToUse = isbnStatus;
 
+    // Đảm bảo check ISBN lần cuối nếu user nhập nhanh quá rồi bấm Enter
     if (normalized) {
       if (isbnStatus === "checking") {
         toast.info("Đang kiểm tra ISBN, vui lòng đợi...");
@@ -181,7 +203,8 @@ const AddBookPopup = () => {
 
     const q = Math.max(parseInt(quantity, 10) || 1, 1);
 
-    // ✅ ISBN tồn tại và KHÔNG bật chỉnh sửa → mặc định chỉ thêm bản sao
+    // KỊCH BẢN A: Thêm BẢN SAO CHO SÁCH CŨ (ISBN tồn tại & Không sửa meta)
+    // Chỉ gửi ISBN và Quantity lên server
     if (statusToUse === "exists" && !allowEdit) {
       const payload = {
         isbn: normalized || "",
@@ -193,17 +216,14 @@ const AddBookPopup = () => {
       return;
     }
 
+    // KỊCH BẢN B: Thêm MỚI HOÀN TOÀN hoặc SỬA THÔNG TIN SÁCH CŨ
     const trimmedTitle = title.trim();
     const trimmedAuthor = author.trim();
-
-
 
     if (!trimmedTitle || !trimmedAuthor) {
       toast.error("Vui lòng nhập Tên sách và Tác giả.");
       return;
     }
-
-
 
     const priceValue = Number(price);
     if (Number.isNaN(priceValue) || priceValue < 0) {
@@ -213,6 +233,7 @@ const AddBookPopup = () => {
 
     const categoriesToSend = (selectedCategoryIds || []).slice(0, MAX_CATEGORIES);
 
+    // Validate category hợp lệ
     if (categoriesToSend.length > 0) {
       const invalidCats = categoriesToSend.filter(
         id => !allCategories.some(c => c._id === id)
@@ -230,7 +251,7 @@ const AddBookPopup = () => {
       price: priceValue,
       quantity: q,
       description,
-      categories: categoriesToSend,  // ✅ Dùng biến đã validate
+      categories: categoriesToSend,
     };
 
     dispatch(addBook(payload));
@@ -244,6 +265,7 @@ const AddBookPopup = () => {
             Thêm sách / Thêm bản sao
           </h3>
 
+          {/* Trạng thái ISBN */}
           <div className="mb-4 flex items-center justify-between gap-3">
             <div className="text-sm">
               {isbnStatus === "checking" && (
@@ -265,6 +287,7 @@ const AddBookPopup = () => {
               )}
             </div>
 
+            {/* Nút bật tắt chỉnh sửa khi trùng ISBN */}
             {isbnStatus === "exists" ? (
               <button
                 type="button"
@@ -279,6 +302,7 @@ const AddBookPopup = () => {
           </div>
 
           <form onSubmit={handleAddBook}>
+            {/* Input ISBN */}
             <div className="mb-4">
               <label className="block text-gray-900 font-medium">
                 ISBN (khuyến nghị)
@@ -298,6 +322,7 @@ const AddBookPopup = () => {
               />
             </div>
 
+            {/* Input Title */}
             <div className="mb-4">
               <label className="block text-gray-900 font-medium">Tên sách</label>
               <input
@@ -316,6 +341,7 @@ const AddBookPopup = () => {
               )}
             </div>
 
+            {/* Input Author */}
             <div className="mb-4">
               <label className="block text-gray-900 font-medium">Tác giả</label>
               <input
@@ -329,6 +355,7 @@ const AddBookPopup = () => {
               />
             </div>
 
+            {/* Input Price */}
             <div className="mb-4">
               <label className="block text-gray-900 font-medium">
                 Giá mượn (phí mượn sách)
@@ -344,6 +371,7 @@ const AddBookPopup = () => {
               />
             </div>
 
+            {/* Input Quantity (BookCopy) */}
             <div className="mb-4">
               <label className="block text-gray-900 font-medium">
                 Số bản sao muốn thêm
@@ -361,7 +389,7 @@ const AddBookPopup = () => {
               </p>
             </div>
 
-            {/* ✅ Thể loại (tối đa 3) */}
+            {/* Select Categories */}
             <div className="mb-4">
               <label className="block text-gray-900 font-medium">
                 Thể loại (tối đa {MAX_CATEGORIES})

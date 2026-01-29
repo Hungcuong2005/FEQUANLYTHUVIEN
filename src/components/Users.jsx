@@ -1,33 +1,41 @@
 import React, { useEffect, useMemo, useState } from "react";
-import axios from "axios";
+import axiosClient from "../api/axiosClient";
 import { Search, Lock, Unlock, Trash2, RotateCcw } from "lucide-react";
 import { toast } from "react-toastify";
 import { useSelector, useDispatch } from "react-redux";
 import Header from "../layout/Header";
 import { fetchAllUsers } from "../store/slices/userSlice";
 
+/**
+ * Users - Component Quản lý Người dùng (Dành cho Admin)
+ * 
+ * Chức năng:
+ * - Hiển thị danh sách user.
+ * - Lọc theo Tab: Chưa xóa (Active) / Đã xóa (Deleted).
+ * - Tìm kiếm theo Tên / Email.
+ * - Thao tác: Khóa/Mở khóa tài khoản, Xóa mềm, Khôi phục.
+ */
 const Users = () => {
   const { users } = useSelector((state) => state.user);
 
   const [localUsers, setLocalUsers] = useState([]);
   const [searchedKeyword, setSearchedKeyword] = useState("");
-  const [viewDeleted, setViewDeleted] = useState(false);
-  const [loadingMap, setLoadingMap] = useState({});
-
-  const apiBaseUrl =
-    import.meta?.env?.VITE_API_BASE_URL || "http://localhost:4000";
-  const USER_API = `${apiBaseUrl}/api/v1/user`;
+  const [viewDeleted, setViewDeleted] = useState(false); // Tab state
+  const [loadingMap, setLoadingMap] = useState({}); // Trạng thái loading từng nút
 
   const dispatch = useDispatch();
 
+  // Load danh sách user khi chuyển tab
   useEffect(() => {
     dispatch(fetchAllUsers(viewDeleted ? "deleted" : "active"));
   }, [viewDeleted, dispatch]);
 
+  // Sync redux state vào local state
   useEffect(() => {
     setLocalUsers(users || []);
   }, [users]);
 
+  // Helper format ngày tháng
   const formatDate = (timeStamp) => {
     if (!timeStamp) return "—";
     const date = new Date(timeStamp);
@@ -43,10 +51,14 @@ const Users = () => {
     return `${formattedDate} ${formattedTime}`;
   };
 
+  /**
+   * Filter users theo từ khóa tìm kiếm
+   */
   const filteredUsers = useMemo(() => {
     const key = searchedKeyword.trim().toLowerCase();
     let list = localUsers || [];
 
+    // Chỉ lấy đúng theo tab hiện tại
     list = list.filter((u) => (viewDeleted ? !!u?.isDeleted : !u?.isDeleted));
 
     if (!key) return list;
@@ -58,24 +70,29 @@ const Users = () => {
     });
   }, [localUsers, searchedKeyword, viewDeleted]);
 
+  // Set trạng thái loading cho từng user
   const setBusy = (id, busy) =>
     setLoadingMap((prev) => ({ ...prev, [id]: !!busy }));
 
+  // Update local state sau khi thao tác API thành công
   const patchLocalUser = (updatedUser) => {
     setLocalUsers((prev) =>
       (prev || []).map((u) => (u._id === updatedUser._id ? updatedUser : u))
     );
   };
 
+  /**
+   * Xử lý Khóa / Mở khóa tài khoản
+   * PATCH /api/v1/user/:id/lock
+   */
   const handleLockToggle = async (u) => {
     try {
       setBusy(u._id, true);
       const nextLocked = !u.isLocked;
 
-      const { data } = await axios.patch(
-        `${USER_API}/${u._id}/lock`,
-        { locked: nextLocked },
-        { withCredentials: true }
+      const { data } = await axiosClient.patch(
+        `/user/${u._id}/lock`,
+        { locked: nextLocked } // body: { locked: true/false }
       );
 
       toast.success(
@@ -91,14 +108,17 @@ const Users = () => {
     }
   };
 
+  /**
+   * Xử lý Xóa mềm user
+   * PATCH /api/v1/user/:id/soft-delete
+   */
   const handleDelete = async (u) => {
     try {
       setBusy(u._id, true);
 
-      const { data } = await axios.patch(
-        `${USER_API}/${u._id}/soft-delete`,
-        {},
-        { withCredentials: true }
+      const { data } = await axiosClient.patch(
+        `/user/${u._id}/soft-delete`,
+        {}
       );
 
       toast.success(data?.message || "Đã xóa người dùng.");
@@ -110,14 +130,17 @@ const Users = () => {
     }
   };
 
+  /**
+   * Xử lý Khôi phục user
+   * PATCH /api/v1/user/:id/restore
+   */
   const handleRestore = async (u) => {
     try {
       setBusy(u._id, true);
 
-      const { data } = await axios.patch(
-        `${USER_API}/${u._id}/restore`,
-        {},
-        { withCredentials: true }
+      const { data } = await axiosClient.patch(
+        `/user/${u._id}/restore`,
+        {}
       );
 
       toast.success(data?.message || "Đã khôi phục người dùng.");
@@ -134,6 +157,7 @@ const Users = () => {
       <main className="relative flex-1 p-6 pt-28">
         <Header />
 
+        {/* --- Header / Filter Controls --- */}
         <div className="bg-white rounded-xl shadow-md border border-[#FDE8EA] p-5">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
@@ -146,6 +170,7 @@ const Users = () => {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+              {/* Search Box */}
               <div className="relative w-full sm:w-72">
                 <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
@@ -157,12 +182,13 @@ const Users = () => {
                 />
               </div>
 
+              {/* Toggle Tab */}
               <button
                 type="button"
                 onClick={() => setViewDeleted((v) => !v)}
                 className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-semibold transition border ${viewDeleted
-                    ? "bg-[#FDE8EA] border-[#C41526] text-[#C41526]"
-                    : "bg-white border-gray-200 text-gray-700 hover:border-[#C41526] hover:bg-[#FDE8EA]"
+                  ? "bg-[#FDE8EA] border-[#C41526] text-[#C41526]"
+                  : "bg-white border-gray-200 text-gray-700 hover:border-[#C41526] hover:bg-[#FDE8EA]"
                   }`}
               >
                 {viewDeleted ? "Đã xóa" : "Chưa xóa"}
@@ -171,6 +197,7 @@ const Users = () => {
           </div>
         </div>
 
+        {/* --- List Table --- */}
         <div className="mt-6 bg-white rounded-xl shadow-lg border border-[#FDE8EA] overflow-hidden">
           <div className="px-5 py-3 border-b border-[#FDE8EA] flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -267,8 +294,8 @@ const Users = () => {
                                 disabled={isBusy}
                                 onClick={() => handleRestore(u)}
                                 className={`p-2 rounded-lg border border-gray-200 transition ${isBusy
-                                    ? "opacity-50 cursor-not-allowed"
-                                    : "hover:border-[#C41526] hover:bg-[#FDE8EA]"
+                                  ? "opacity-50 cursor-not-allowed"
+                                  : "hover:border-[#C41526] hover:bg-[#FDE8EA]"
                                   }`}
                                 title="Khôi phục"
                               >
@@ -280,7 +307,7 @@ const Users = () => {
                                 {isAdmin ? (
                                   <span
                                     className="px-2 text-sm text-gray-400 select-none"
-                                    title="Không có thao tác"
+                                    title="Không có thao tác cho Admin"
                                   >
                                     —
                                   </span>
@@ -292,8 +319,8 @@ const Users = () => {
                                       disabled={isBusy}
                                       onClick={() => handleLockToggle(u)}
                                       className={`p-2 rounded-lg border border-gray-200 transition ${isBusy
-                                          ? "opacity-50 cursor-not-allowed"
-                                          : "hover:border-[#C41526] hover:bg-[#FDE8EA]"
+                                        ? "opacity-50 cursor-not-allowed"
+                                        : "hover:border-[#C41526] hover:bg-[#FDE8EA]"
                                         }`}
                                       title={
                                         u?.isLocked
@@ -314,8 +341,8 @@ const Users = () => {
                                       disabled={isBusy}
                                       onClick={() => handleDelete(u)}
                                       className={`p-2 rounded-lg border border-gray-200 transition ${isBusy
-                                          ? "opacity-50 cursor-not-allowed"
-                                          : "hover:border-[#C41526] hover:bg-[#FDE8EA]"
+                                        ? "opacity-50 cursor-not-allowed"
+                                        : "hover:border-[#C41526] hover:bg-[#FDE8EA]"
                                         }`}
                                       title="Xóa"
                                     >
