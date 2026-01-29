@@ -3,14 +3,7 @@ import { useDispatch } from "react-redux";
 import { toggleReturnBookPopup } from "../store/slices/popUpSlice";
 import PaymentMethodPopup from "./PaymentMethodPopup";
 
-const ReturnBookPopup = ({
-  bookId,
-  email,
-  amount = 0,
-
-  // ✅ nếu backend chạy khác domain (vd http://localhost:8386)
-  apiBaseUrl = "",
-}) => {
+const ReturnBookPopup = ({ borrowId, email, amount = 0, apiBaseUrl = "" }) => {
   const dispatch = useDispatch();
   const [showPayment, setShowPayment] = useState(false);
 
@@ -20,7 +13,6 @@ const ReturnBookPopup = ({
     return `${amount}₫`;
   }, [amount]);
 
-  // Bấm "Trả sách" -> mở popup chọn phương thức thanh toán
   const handleOpenPayment = (e) => {
     e.preventDefault();
     setShowPayment(true);
@@ -79,12 +71,12 @@ const ReturnBookPopup = ({
       {showPayment && (
         <PaymentMethodPopup
           amount={amount}
-          bookId={bookId}
+          borrowId={borrowId}
           email={email}
           apiBaseUrl={apiBaseUrl}
           onClose={() => {
             setShowPayment(false);
-            dispatch(toggleReturnBookPopup()); // đóng luôn popup trả sách
+            dispatch(toggleReturnBookPopup());
           }}
         />
       )}

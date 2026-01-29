@@ -1,13 +1,13 @@
 import React, { useMemo, useState } from "react";
 import axios from "axios";
 import { useDispatch } from "react-redux";
-import { fetchAllBorrowedBooks } from "../store/slices/borrowSlice"; // ✅ chỉnh path nếu khác
+import { fetchAllBorrowedBooks } from "../store/slices/borrowSlice"; // giữ nguyên theo project bạn
 
 const PaymentMethodPopup = ({
   amount = 0,
   defaultMethod = "cash",
   onClose,
-  bookId,
+  borrowId,
   email,
   apiBaseUrl = "",
 }) => {
@@ -27,8 +27,8 @@ const PaymentMethodPopup = ({
     e.preventDefault();
     setError("");
 
-    if (!bookId) return setError("Thiếu bookId (ID sách) để tạo thanh toán.");
-    if (!email) return setError("Thiếu email người dùng để tạo thanh toán.");
+    if (!borrowId) return setError("Thiếu borrowId (ID lượt mượn).");
+    if (!email) return setError("Thiếu email người dùng.");
 
     if (method === "zalopay") {
       setError("ZaloPay chưa tích hợp. Hãy chọn VNPAY hoặc Tiền mặt.");
@@ -38,15 +38,14 @@ const PaymentMethodPopup = ({
     try {
       setLoading(true);
 
-      // 1) PREPARE (tính fine + tổng tiền)
-      const prepareUrl = `${apiBaseUrl}/api/v1/borrow/return/prepare/${bookId}`;
+      // ✅ PREPARE theo borrowId
+      const prepareUrl = `${apiBaseUrl}/api/v1/borrow/return/prepare/${borrowId}`;
       const { data } = await axios.post(
         prepareUrl,
         { email, method },
         { withCredentials: true }
       );
 
-      // 2) VNPAY -> redirect thanh toán thật
       if (method === "vnpay") {
         if (!data?.paymentUrl) {
           setError("Không nhận được paymentUrl từ server.");
@@ -56,17 +55,14 @@ const PaymentMethodPopup = ({
         return;
       }
 
-      // 3) CASH -> confirm luôn để tick
       if (method === "cash") {
         const realAmount = data?.amount ?? amount;
 
-        const confirmUrl = `${apiBaseUrl}/api/v1/borrow/return/cash/confirm/${bookId}`;
+        // ✅ CONFIRM CASH theo borrowId
+        const confirmUrl = `${apiBaseUrl}/api/v1/borrow/return/cash/confirm/${borrowId}`;
         await axios.post(confirmUrl, { email }, { withCredentials: true });
 
-        // ✅ đóng popup
         onClose?.();
-
-        // ✅ refetch danh sách để tick ngay, KHÔNG reload trang
         await dispatch(fetchAllBorrowedBooks());
 
         alert(

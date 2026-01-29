@@ -1,9 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { BookA } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
-import { toggleReadBookPopup } from "../store/slices/popUpSlice";
 import Header from "../layout/Header";
-import ReadBookPopup from "../popups/ReadBookPopup";
 import { toast } from "react-toastify";
 import {
   fetchUserBorrowedBooks,
@@ -14,17 +11,9 @@ import {
 const MyBorrowedBooks = ({ defaultFilter = "returned" }) => {
   const dispatch = useDispatch();
 
-  const { books } = useSelector((state) => state.book);
-  const { userBorrowedBooks, message, error } = useSelector((state) => state.borrow);
-  const { readBookPopup } = useSelector((state) => state.popup);
-
-  const [readBook, setReadBook] = useState({});
-
-  const openReadPopup = (id) => {
-    const book = books.find((book) => book._id === id);
-    setReadBook(book);
-    dispatch(toggleReadBookPopup());
-  };
+  const { userBorrowedBooks, message, error } = useSelector(
+    (state) => state.borrow
+  );
 
   const formatDate = (timeStamp) => {
     const date = new Date(timeStamp);
@@ -43,10 +32,8 @@ const MyBorrowedBooks = ({ defaultFilter = "returned" }) => {
     return `${formattedDate} ${formattedTime}`;
   };
 
-  // filter mặc định lấy từ prop
   const [filter, setFilter] = useState(defaultFilter);
 
-  // mỗi lần mở từ Dashboard (prop đổi) thì tự set lại tab
   useEffect(() => {
     if (defaultFilter) setFilter(defaultFilter);
   }, [defaultFilter]);
@@ -66,8 +53,12 @@ const MyBorrowedBooks = ({ defaultFilter = "returned" }) => {
 
   const maxRenewals = 2;
 
-  const returnedBooks = userBorrowedBooks?.filter((book) => book.returned === true);
-  const nonReturnedBooks = userBorrowedBooks?.filter((book) => book.returned === false);
+  const returnedBooks = userBorrowedBooks?.filter(
+    (book) => book.returned === true
+  );
+  const nonReturnedBooks = userBorrowedBooks?.filter(
+    (book) => book.returned === false
+  );
 
   const booksToDisplay = filter === "returned" ? returnedBooks : nonReturnedBooks;
 
@@ -76,21 +67,20 @@ const MyBorrowedBooks = ({ defaultFilter = "returned" }) => {
       <main className="relative flex-1 p-6 pt-28">
         <Header />
 
-        {/* Tiêu đề */}
         <header className="flex flex-col gap-3 md:flex-row md:justify-between md:items-center">
           <h2 className="text-xl font-medium md:text-2xl md:font-semibold text-[#C41526]">
             Sách bạn đã mượn
           </h2>
         </header>
 
-        {/* Nút lọc */}
         <header className="flex flex-col gap-3 sm:flex-row md:items-center mt-4">
           <button
             className={`relative rounded sm:rounded-tr-none sm:rounded-br-none sm:rounded-tl-lg sm:rounded-bl-lg
-            text-center border-2 font-semibold py-2 w-full sm:w-72 transition ${filter === "returned"
+            text-center border-2 font-semibold py-2 w-full sm:w-72 transition ${
+              filter === "returned"
                 ? "bg-[#C41526] text-white border-[#C41526]"
                 : "bg-gray-200 text-black border-gray-200 hover:bg-gray-300"
-              }`}
+            }`}
             onClick={() => setFilter("returned")}
           >
             Sách đã trả
@@ -98,10 +88,11 @@ const MyBorrowedBooks = ({ defaultFilter = "returned" }) => {
 
           <button
             className={`relative rounded sm:rounded-tl-none sm:rounded-bl-none sm:rounded-tr-lg sm:rounded-br-lg
-            text-center border-2 font-semibold py-2 w-full sm:w-72 transition ${filter === "nonReturned"
+            text-center border-2 font-semibold py-2 w-full sm:w-72 transition ${
+              filter === "nonReturned"
                 ? "bg-[#C41526] text-white border-[#C41526]"
                 : "bg-gray-200 text-black border-gray-200 hover:bg-gray-300"
-              }`}
+            }`}
             onClick={() => setFilter("nonReturned")}
           >
             Sách chưa trả
@@ -131,12 +122,8 @@ const MyBorrowedBooks = ({ defaultFilter = "returned" }) => {
                   <th className="px-6 py-3 text-left text-base font-bold text-[#C41526]">
                     Gia hạn
                   </th>
-                  <th className="px-6 py-3 text-left text-base font-bold text-[#C41526]">
-                    Xem
-                  </th>
                 </tr>
               </thead>
-
 
               <tbody>
                 {booksToDisplay.map((book, index) => {
@@ -144,60 +131,60 @@ const MyBorrowedBooks = ({ defaultFilter = "returned" }) => {
                   const dueDate = book.dueDate ? new Date(book.dueDate) : null;
                   const isOverdue = dueDate ? dueDate <= today : false;
                   const renewCount = book.renewCount || 0;
-                  const isDisabled = book.returned || isOverdue || renewCount >= maxRenewals;
+                  const isDisabled =
+                    book.returned || isOverdue || renewCount >= maxRenewals;
 
                   return (
-                  <tr
-                    key={index}
-                    className={(index + 1) % 2 === 0 ? "bg-gray-50" : ""}
-                  >
-                    <td className="px-4 py-2">{index + 1}</td>
-                    <td className="px-4 py-2">{book.bookTitle}</td>
-                    <td className="px-4 py-2">{formatDate(book.borrowedDate)}</td>
-                    <td className="px-4 py-2">{formatDate(book.dueDate)}</td>
-                    <td className="px-4 py-2">
-                      {book.returned ? (
-                        // ✅ ĐÃ TRẢ: xanh
-                        <span className="inline-flex items-center px-5 py-1 rounded-md text-sm font-semibold bg-[#E9FBEF] text-[#0F7A2A]">
-                          Đã trả
-                        </span>
-                      ) : (
-                        // ✅ CHƯA TRẢ: đỏ (màu chủ đạo)
-                        <span className="inline-flex items-center px-4 py-1 rounded-md text-sm font-semibold bg-[#FDE8EA] text-[#C41526]">
-                          Chưa trả
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-4 py-2">
-                      <div className="flex flex-col gap-2">
-                        <span className="text-xs text-gray-500">
-                          Lần {renewCount}/{maxRenewals}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => dispatch(renewBorrowedBook(book.bookId))}
-                          disabled={isDisabled}
-                          className="px-3 py-1 rounded-md border border-[#FDE8EA] text-sm font-semibold text-[#C41526] hover:bg-[#FDE8EA] disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {book.returned
-                            ? "Đã trả"
-                            : isOverdue
+                    <tr
+                      key={index}
+                      className={(index + 1) % 2 === 0 ? "bg-gray-50" : ""}
+                    >
+                      <td className="px-4 py-2">{index + 1}</td>
+                      <td className="px-4 py-2">{book.bookTitle}</td>
+                      <td className="px-4 py-2">
+                        {formatDate(book.borrowedDate)}
+                      </td>
+                      <td className="px-4 py-2">{formatDate(book.dueDate)}</td>
+
+                      <td className="px-4 py-2">
+                        {book.returned ? (
+                          <span className="inline-flex items-center px-5 py-1 rounded-md text-sm font-semibold bg-[#E9FBEF] text-[#0F7A2A]">
+                            Đã trả
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-4 py-1 rounded-md text-sm font-semibold bg-[#FDE8EA] text-[#C41526]">
+                            Chưa trả
+                          </span>
+                        )}
+                      </td>
+
+                      <td className="px-4 py-2">
+                        <div className="flex flex-col gap-2">
+                          <span className="text-xs text-gray-500">
+                            Lần {renewCount}/{maxRenewals}
+                          </span>
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              dispatch(renewBorrowedBook(book.borrowId))
+                            }
+                            disabled={isDisabled}
+                            className="px-3 py-1 rounded-md border border-[#FDE8EA] text-sm font-semibold text-[#C41526] hover:bg-[#FDE8EA] disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {book.returned
+                              ? "Đã trả"
+                              : isOverdue
                               ? "Quá hạn"
                               : renewCount >= maxRenewals
-                                ? "Hết lượt"
-                                : "Gia hạn +7 ngày"}
-                        </button>
-                      </div>
-                    </td>
-                    <td className="px-4 py-2">
-                      <BookA
-                        className="cursor-pointer transition hover:scale-110"
-                        color="#C41526"
-                        onClick={() => openReadPopup(book.bookId)}
-                      />
-                    </td>
-                  </tr>
-                )})}
+                              ? "Hết lượt"
+                              : "Gia hạn +7 ngày"}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -211,11 +198,8 @@ const MyBorrowedBooks = ({ defaultFilter = "returned" }) => {
           </h3>
         )}
       </main>
-
-      {readBookPopup && <ReadBookPopup book={readBook} />}
     </>
   );
-
 };
 
 export default MyBorrowedBooks;

@@ -47,7 +47,7 @@ const BookManagement = () => {
 
   // ===== FUNCTIONS =====
   const openReadPopup = (id) => {
-    const book = books.find((b) => b._id === id);
+    const book = (books || []).find((b) => b._id === id);
     setReadBook(book);
     dispatch(toggleReadBookPopup());
   };
@@ -251,10 +251,16 @@ const BookManagement = () => {
                       Tác giả
                     </th>
 
+                    {/* ✅ THÊM 2 CỘT: Tổng bản sao + Còn lại (chưa mượn) */}
                     {isAuthenticated && user?.role === "Admin" && (
-                      <th className="px-4 py-3 text-left text-base font-bold text-[#C41526]">
-                        Số lượng
-                      </th>
+                      <>
+                        <th className="px-4 py-3 text-left text-base font-bold text-[#C41526]">
+                          Tổng bản sao
+                        </th>
+                        <th className="px-4 py-3 text-left text-base font-bold text-[#C41526]">
+                          Còn lại
+                        </th>
+                      </>
                     )}
 
                     <th className="px-4 py-3 text-left text-base font-bold text-[#C41526]">
@@ -264,7 +270,8 @@ const BookManagement = () => {
                       Trạng thái
                     </th>
 
-                    {isAuthenticated && user?.role === "Admin" && (
+                    {/* ✅ USER cũng thấy icon xem thông tin: mở cột thao tác cho mọi người đăng nhập */}
+                    {isAuthenticated && (
                       <th className="px-4 py-3 text-center text-base font-bold text-[#C41526]">
                         Thao tác
                       </th>
@@ -288,8 +295,12 @@ const BookManagement = () => {
                       </td>
                       <td className="px-4 py-3 text-gray-700">{book.author}</td>
 
+                      {/* ✅ THÊM 2 CỘT DATA */}
                       {isAuthenticated && user?.role === "Admin" && (
-                        <td className="px-4 py-3">{book.quantity}</td>
+                        <>
+                          <td className="px-4 py-3">{book.totalCopies ?? 0}</td>
+                          <td className="px-4 py-3">{book.quantity ?? 0}</td>
+                        </>
                       )}
 
                       <td className="px-4 py-3">{moneyVND(book.price)}</td>
@@ -306,7 +317,8 @@ const BookManagement = () => {
                         )}
                       </td>
 
-                      {isAuthenticated && user?.role === "Admin" && (
+                      {/* ✅ USER + ADMIN đều xem được; chỉ ADMIN mới ghi nhận mượn/trả */}
+                      {isAuthenticated && (
                         <td className="px-4 py-3">
                           <div className="flex items-center justify-center gap-2">
                             <button
@@ -318,14 +330,16 @@ const BookManagement = () => {
                               <BookA className="w-5 h-5 text-[#C41526]" />
                             </button>
 
-                            <button
-                              type="button"
-                              onClick={() => openRecordBookPopup(book._id)}
-                              className="p-2 rounded-lg border border-gray-200 hover:border-[#C41526] hover:bg-[#FDE8EA] transition"
-                              title="Ghi nhận mượn/trả"
-                            >
-                              <NotebookPen className="w-5 h-5 text-[#C41526]" />
-                            </button>
+                            {user?.role === "Admin" && (
+                              <button
+                                type="button"
+                                onClick={() => openRecordBookPopup(book._id)}
+                                className="p-2 rounded-lg border border-gray-200 hover:border-[#C41526] hover:bg-[#FDE8EA] transition"
+                                title="Ghi nhận mượn/trả"
+                              >
+                                <NotebookPen className="w-5 h-5 text-[#C41526]" />
+                              </button>
+                            )}
                           </div>
                         </td>
                       )}
@@ -438,7 +452,10 @@ const BookManagement = () => {
 
       {addBookPopup && <AddBookPopup />}
       {readBookPopup && <ReadBookPopup book={readBook} />}
-      {recordBookPopup && <RecordBookPopup bookId={borrowBookId} />}
+      {/* ✅ Chỉ ADMIN mới được mở popup ghi nhận mượn/trả */}
+      {recordBookPopup && user?.role === "Admin" && (
+        <RecordBookPopup bookId={borrowBookId} />
+      )}
     </>
   );
 };

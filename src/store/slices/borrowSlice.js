@@ -1,6 +1,7 @@
 import { createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 import { toggleRecordBookPopup } from "./popUpSlice";
+import { toast } from "react-toastify";
 
 const borrowSlice = createSlice({
   name: "borrow",
@@ -150,15 +151,14 @@ export const fetchAllBorrowedBooks = () => async (dispatch) => {
     });
 };
 
-
-// ===== RECORD BORROW BOOK =====
-export const recordBorrowBook = (email, id) => async (dispatch) => {
+// ===== RECORD BORROW BOOK - CẬP NHẬT ĐỂ GỬI copyId =====
+export const recordBorrowBook = (email, bookId, copyId) => async (dispatch) => {
   dispatch(borrowSlice.actions.recordBookRequest());
 
   await axios
     .post(
-      `http://localhost:4000/api/v1/borrow/record-borrow-book/${id}`,
-      { email },
+      `http://localhost:4000/api/v1/borrow/record-borrow-book/${bookId}`,
+      { email, copyId }, // ✅ Gửi cả copyId
       {
         withCredentials: true,
         headers: {
@@ -167,17 +167,23 @@ export const recordBorrowBook = (email, id) => async (dispatch) => {
       }
     )
     .then((res) => {
-      dispatch(
-        borrowSlice.actions.recordBookSuccess(res.data.message)
+      dispatch(borrowSlice.actions.recordBookSuccess(res.data.message));
+
+      // ✅ Popup thông báo thành công với mã BookCopy
+      const copyCode = res.data.bookCopyCode || "N/A";
+      toast.success(
+        `${res.data.message || "Ghi nhận mượn sách thành công!"}\nMã cuốn: ${copyCode}`,
+        { toastId: `record-borrow-${bookId}-${copyId}` }
       );
+
       dispatch(toggleRecordBookPopup());
     })
     .catch((err) => {
-      dispatch(
-        borrowSlice.actions.recordBookFailed(
-          err.response.data.message
-        )
-      );
+      const msg = err?.response?.data?.message || "Ghi nhận mượn sách thất bại!";
+      dispatch(borrowSlice.actions.recordBookFailed(msg));
+
+      // ✅ Popup thông báo lỗi
+      toast.error(msg, { toastId: `record-borrow-error-${bookId}` });
     });
 };
 
@@ -211,11 +217,11 @@ export const returnBook = (email, id) => async (dispatch) => {
 };
 
 // ===== RENEW BOOK =====
-export const renewBorrowedBook = (bookId) => async (dispatch) => {
+export const renewBorrowedBook = (borrowId) => async (dispatch) => {
   dispatch(borrowSlice.actions.renewBookRequest());
 
   await axios
-    .post(`http://localhost:4000/api/v1/borrow/renew/${bookId}`, {}, {
+    .post(`http://localhost:4000/api/v1/borrow/renew/${borrowId}`, {}, {
       withCredentials: true,
     })
     .then((res) => {
@@ -235,10 +241,3 @@ export const resetBorrowSlice = () => (dispatch) => {
 };
 
 export default borrowSlice.reducer;
-
-
-
-
-
-
-

@@ -102,6 +102,8 @@ const AddBookPopup = () => {
   // - ISBN mới (new) hoặc chưa nhập ISBN (idle)  → sửa được
   // - ISBN đã tồn tại (exists) nhưng người dùng bật allowEdit
   const canEditMeta = isbnStatus !== "exists" || allowEdit;
+  // ✅ Cho phép chỉnh sửa mô tả ngay cả khi ISBN đã tồn tại (không bị bôi xám)
+  const canEditDescription = canEditMeta || isbnStatus === "exists";
 
   const handleAddBook = async (e) => {
     e?.preventDefault();
@@ -123,11 +125,13 @@ const AddBookPopup = () => {
 
     const q = Math.max(parseInt(quantity, 10) || 1, 1);
 
-    // ✅ Nếu ISBN đã tồn tại và KHÔNG bật chỉnh sửa → chỉ cần số bản sao
+    // ✅ Nếu ISBN đã tồn tại và KHÔNG bật chỉnh sửa → mặc định chỉ thêm bản sao
+    // Nhưng vẫn cho phép sửa "Mô tả" (nếu bạn nhập) mà không cần bật chỉnh sửa.
     if (statusToUse === "exists" && !allowEdit) {
       const payload = {
         isbn: normalized || "",
         quantity: q,
+        description, // ✅ cho phép update mô tả nếu backend hỗ trợ
       };
       dispatch(addBook(payload));
       return;
@@ -290,9 +294,9 @@ const AddBookPopup = () => {
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className={canEditMeta ? inputClass : disabledInputClass}
+                className={canEditDescription ? inputClass : disabledInputClass}
                 rows={3}
-                disabled={!canEditMeta}
+                disabled={!canEditDescription}
                 required={isbnStatus === "new" || allowEdit}
               />
             </div>

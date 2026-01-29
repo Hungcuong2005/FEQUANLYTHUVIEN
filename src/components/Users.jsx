@@ -151,7 +151,7 @@ const Users = () => {
                 <input
                   type="text"
                   placeholder="Tìm theo tên hoặc email..."
-                  className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C41526] focus:border-[#C41526]"
+                  className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg focus:outline-none"
                   value={searchedKeyword}
                   onChange={(e) => setSearchedKeyword(e.target.value)}
                 />

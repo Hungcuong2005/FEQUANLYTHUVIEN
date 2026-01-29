@@ -98,7 +98,7 @@ const AddNewAdmin = () => {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Nhập tên quản trị viên"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#C41526] focus:border-[#C41526]"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none"
                   required
                 />
               </div>
@@ -112,7 +112,7 @@ const AddNewAdmin = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Nhập email quản trị viên"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#C41526] focus:border-[#C41526]"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none"
                   required
                 />
               </div>
@@ -126,7 +126,7 @@ const AddNewAdmin = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Nhập mật khẩu"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#C41526] focus:border-[#C41526]"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none"
                   required
                 />
               </div>
