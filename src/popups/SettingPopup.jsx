@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import closeIcon from "../assets/close-square.png";
 import { useDispatch, useSelector } from "react-redux";
 import { updatePassword } from "../store/slices/authSlice";
 import settingIcon from "../assets/setting.png";
@@ -13,15 +12,32 @@ const SettingPopup = () => {
   const dispatch = useDispatch();
   const { loading } = useSelector((state) => state.auth);
 
-  const handleUpdatePassword = (e) => {
-    e.preventDefault();
+  const handleUpdatePassword = () => {
+    const cp = currentPassword.trim();
+    const np = newPassword.trim();
+    const cnp = confirmNewPassword.trim();
 
-    const data = new FormData();
-    data.append("currentPassword", currentPassword);
-    data.append("newPassword", newPassword);
-    data.append("confirmNewPassword", confirmNewPassword);
+    if (!cp || !np || !cnp) return;
 
-    dispatch(updatePassword(data));
+    if (np.length < 6) {
+      alert("Mật khẩu mới phải có ít nhất 6 ký tự!");
+      return;
+    }
+
+    if (np !== cnp) {
+      alert("Xác nhận mật khẩu mới không khớp!");
+      return;
+    }
+
+
+    dispatch(
+      updatePassword({
+        currentPassword: cp,
+        newPassword: np,
+        confirmNewPassword: cnp,
+      })
+    );
+
   };
 
   return (
@@ -33,9 +49,7 @@ const SettingPopup = () => {
             <span className="bg-white/15 p-3 rounded-lg">
               <img src={settingIcon} alt="setting-icon" className="w-6 h-6" />
             </span>
-            <h3 className="text-lg sm:text-xl font-bold">
-              Đổi mật khẩu
-            </h3>
+            <h3 className="text-lg sm:text-xl font-bold">Đổi mật khẩu</h3>
           </div>
 
           <button
@@ -61,68 +75,68 @@ const SettingPopup = () => {
 
         {/* BODY */}
         <div className="p-6">
-          <form onSubmit={handleUpdatePassword}>
-            <div className="mb-4 sm:flex gap-4 items-center">
-              <label className="block text-gray-900 font-medium w-full">
-                Mật khẩu hiện tại
-              </label>
-              <input
-                type="password"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                placeholder="Nhập mật khẩu hiện tại"
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#C41526] focus:border-[#C41526]"
-                required
-              />
-            </div>
+          {/* ❌ Không dùng form nữa */}
+          <div className="mb-4 sm:flex gap-4 items-center">
+            <label className="block text-gray-900 font-medium w-full">
+              Mật khẩu hiện tại
+            </label>
+            <input
+              type="password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              placeholder="Nhập mật khẩu hiện tại"
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#C41526] focus:border-[#C41526]"
+              required
+            />
+          </div>
 
-            <div className="mb-4 sm:flex gap-4 items-center">
-              <label className="block text-gray-900 font-medium w-full">
-                Mật khẩu mới
-              </label>
-              <input
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Nhập mật khẩu mới"
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#C41526] focus:border-[#C41526]"
-                required
-              />
-            </div>
+          <div className="mb-4 sm:flex gap-4 items-center">
+            <label className="block text-gray-900 font-medium w-full">
+              Mật khẩu mới
+            </label>
+            <input
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="Nhập mật khẩu mới"
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#C41526] focus:border-[#C41526]"
+              required
+            />
+          </div>
 
-            <div className="mb-4 sm:flex gap-4 items-center">
-              <label className="block text-gray-900 font-medium w-full">
-                Xác nhận mật khẩu mới
-              </label>
-              <input
-                type="password"
-                value={confirmNewPassword}
-                onChange={(e) => setConfirmNewPassword(e.target.value)}
-                placeholder="Nhập lại mật khẩu mới"
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#C41526] focus:border-[#C41526]"
-                required
-              />
-            </div>
+          <div className="mb-4 sm:flex gap-4 items-center">
+            <label className="block text-gray-900 font-medium w-full">
+              Xác nhận mật khẩu mới
+            </label>
+            <input
+              type="password"
+              value={confirmNewPassword}
+              onChange={(e) => setConfirmNewPassword(e.target.value)}
+              placeholder="Nhập lại mật khẩu mới"
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#C41526] focus:border-[#C41526]"
+              required
+            />
+          </div>
 
-            {/* FOOTER BUTTONS */}
-            <div className="flex gap-3 mt-8 justify-end">
-              <button
-                type="button"
-                onClick={() => dispatch(toggleSettingPopup())}
-                className="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300 transition"
-              >
-                Hủy
-              </button>
+          {/* FOOTER BUTTONS */}
+          <div className="flex gap-3 mt-8 justify-end">
+            <button
+              type="button"
+              onClick={() => dispatch(toggleSettingPopup())}
+              className="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300 transition"
+            >
+              Hủy
+            </button>
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="px-4 py-2 bg-[#C41526] text-white rounded-md hover:bg-[#A81220] transition disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                {loading ? "Đang lưu..." : "Xác nhận"}
-              </button>
-            </div>
-          </form>
+            <button
+              type="button"
+              onClick={handleUpdatePassword}
+              disabled={loading}
+              className="px-4 py-2 bg-[#C41526] text-white rounded-md hover:bg-[#A81220] transition disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {loading ? "Đang lưu..." : "Xác nhận"}
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -175,16 +175,19 @@ export const resetAuthSlice = () => (dispatch) => {
 export const register = (data) => async (dispatch) => {
   dispatch(authSlice.actions.registerRequest());
 
-  await axiosClient
-    .post("/auth/register", data)
-    .then((res) => {
-      dispatch(authSlice.actions.registerSuccess(res.data));
-    })
-    .catch((error) => {
-      dispatch(
-        authSlice.actions.registerFailed(error.response.data.message)
-      );
+  try {
+    const res = await axiosClient.post("/auth/register", data, {
+      headers: { "Content-Type": "application/json" },
     });
+
+    dispatch(authSlice.actions.registerSuccess(res.data));
+  } catch (error) {
+    dispatch(
+      authSlice.actions.registerFailed(
+        error?.response?.data?.message || "Register failed"
+      )
+    );
+  }
 };
 
 // Xác thực OTP để kích hoạt tài khoản
@@ -210,11 +213,12 @@ export const login = (data) => async (dispatch) => {
   dispatch(authSlice.actions.loginRequest());
 
   await axiosClient
-    .post(
-      "/auth/login",
-      data
-    )
+    .post("/auth/login", data)
     .then((res) => {
+
+      // ✅ LƯU TOKEN
+      localStorage.setItem("token", res.data.token);
+
       dispatch(authSlice.actions.loginSuccess(res.data));
     })
     .catch((error) => {
@@ -226,6 +230,7 @@ export const login = (data) => async (dispatch) => {
     });
 };
 
+
 // Đăng xuất
 export const logout = () => async (dispatch) => {
   dispatch(authSlice.actions.logoutRequest());
@@ -233,12 +238,12 @@ export const logout = () => async (dispatch) => {
   await axiosClient
     .get("/auth/logout")
     .then((res) => {
-      dispatch(
-        authSlice.actions.logoutSuccess(res.data.message)
-      );
-      dispatch(
-        authSlice.actions.resetAuthSlice()
-      );
+
+      // ✅ XÓA TOKEN
+      localStorage.removeItem("token");
+
+      dispatch(authSlice.actions.logoutSuccess(res.data.message));
+      dispatch(authSlice.actions.resetAuthSlice());
     })
     .catch((error) => {
       dispatch(
@@ -248,6 +253,7 @@ export const logout = () => async (dispatch) => {
       );
     });
 };
+
 
 // Lấy thông tin user hiện tại (Load User)
 export const getUser = () => async (dispatch) => {

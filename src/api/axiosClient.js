@@ -2,14 +2,13 @@ import axios from "axios";
 
 /**
  * axiosClient - Cấu hình Axios gốc cho toàn bộ project Client
- * 
- * - baseURL: Lấy từ biến môi trường VITE_API_BASE_URL (ưu tiên) hoặc localhost
- * - withCredentials: true (Để gửi kèm cookie/token khi gọi API)
- * - headers: Tự động xử lý dựa trên loại data (JSON/FormData)
  */
+const rawBase =
+  (import.meta.env?.VITE_API_BASE_URL || "http://localhost:4000").replace(/\/+$/, "");
+
 const axiosClient = axios.create({
-    baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:4000/api/v1",
-    withCredentials: true,
+  baseURL: `${rawBase}/api/v1`,
+  withCredentials: true,
 });
 
 /**
@@ -17,14 +16,21 @@ const axiosClient = axios.create({
  */
 axiosClient.interceptors.request.use(
   (config) => {
+
+    // ✅ GẮN TOKEN VÀO HEADER
+    const token = localStorage.getItem("token");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+
+    // giữ logic cũ
     if (config.data instanceof FormData) {
       console.log("🔥 [axiosClient] FormData detected - removing Content-Type header");
-      delete config.headers['Content-Type'];
-    } else {
-      if (!config.headers['Content-Type']) {
-        config.headers['Content-Type'] = 'application/json';
-      }
+      delete config.headers["Content-Type"];
+    } else if (!config.headers["Content-Type"]) {
+      config.headers["Content-Type"] = "application/json";
     }
+
     return config;
   },
   (error) => {
