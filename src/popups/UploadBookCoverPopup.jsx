@@ -4,17 +4,15 @@ import { toast } from "react-toastify";
 
 /**
  * Popup upload/cập nhật ảnh bìa sách
- * - Style đồng bộ với RecordBookPopup
  * - API: PUT /api/v1/book/admin/:id/cover
  * - FormData field: coverImage
  */
 const UploadBookCoverPopup = ({ open, onClose, book, onUpdated }) => {
-
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const currentUrl = useMemo(() => book?.coverImage || "", [book]);
+  const currentUrl = useMemo(() => book?.coverImage?.url || "", [book]);
 
   useEffect(() => {
     if (!open) return;
@@ -37,7 +35,8 @@ const UploadBookCoverPopup = ({ open, onClose, book, onUpdated }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!book?._id) {
+    const bookId = book?._id;
+    if (!bookId) {
       toast.error("Không tìm thấy sách để cập nhật ảnh.");
       return;
     }
@@ -52,17 +51,49 @@ const UploadBookCoverPopup = ({ open, onClose, book, onUpdated }) => {
       return;
     }
 
+    // ✅ DEBUG: endpoint & baseURL
+    const endpoint = `/book/admin/${bookId}/cover`;
+    const baseURL = axiosClient?.defaults?.baseURL || "(no baseURL)";
+    console.log("🌐 Upload endpoint:", { baseURL, endpoint, full: `${baseURL}${endpoint}` });
+
     try {
       setLoading(true);
 
       const fd = new FormData();
       fd.append("coverImage", file);
 
-      // ⚠️ axios sẽ tự set Content-Type thành multipart/form-data khi body là FormData
-      const res = await axiosClient.put(
-        `/book/admin/${book._id}/cover`,
-        fd
-      );
+      // ✅ DEBUG: kiểm tra FormData có field gì
+      // (Browser console sẽ in được)
+      console.log("📦 FormData entries:");
+      for (const [k, v] of fd.entries()) {
+        if (v instanceof File) {
+          console.log(" -", k, {
+            name: v.name,
+            type: v.type,
+            size: v.size,
+            lastModified: v.lastModified,
+          });
+        } else {
+          console.log(" -", k, v);
+        }
+      }
+
+      // ✅ DEBUG: thông tin file
+      console.log("📤 Uploading cover image:", {
+        bookId,
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: file.size,
+      });
+
+      const res = await axiosClient.put(endpoint, fd);
+
+      console.log("✅ Upload response:", {
+        status: res.status,
+        statusText: res.statusText,
+        headers: res.headers,
+        data: res.data,
+      });
 
       const data = res.data;
       if (!data?.success) {
@@ -73,7 +104,37 @@ const UploadBookCoverPopup = ({ open, onClose, book, onUpdated }) => {
       onUpdated?.(data.book);
       onClose?.();
     } catch (err) {
-      toast.error(err?.message || "Có lỗi xảy ra.");
+      // ✅ DEBUG: log đầy đủ lỗi axios
+      const isAxios = !!err?.isAxiosError;
+      const status = err?.response?.status;
+      const respData = err?.response?.data;
+      const respHeaders = err?.response?.headers;
+
+      console.group("❌ Upload error (debug)");
+      console.log("isAxiosError:", isAxios);
+      console.log("message:", err?.message);
+      console.log("code:", err?.code);
+      console.log("status:", status);
+      console.log("response headers:", respHeaders);
+      console.log("response data:", respData);
+      console.log("config:", err?.config);
+      console.log("stack:", err?.stack);
+      console.groupEnd();
+
+      // ✅ Message ưu tiên từ backend
+      let errorMsg =
+        respData?.message ||
+        err?.message ||
+        "Có lỗi xảy ra.";
+
+      // ✅ Gợi ý nhanh theo status (để bạn nhìn console là biết ngay)
+      if (status === 401) errorMsg = errorMsg || "401: Bạn chưa đăng nhập hoặc phiên hết hạn.";
+      if (status === 403) errorMsg = errorMsg || "403: Không đủ quyền (Admin?).";
+      if (status === 404) errorMsg = errorMsg || "404: Sai route upload cover.";
+      if (status === 413) errorMsg = errorMsg || "413: File quá lớn (vượt giới hạn server).";
+      if (status >= 500) errorMsg = errorMsg || "Server lỗi (500+). Xem log backend.";
+
+      toast.error(errorMsg);
     } finally {
       setLoading(false);
     }

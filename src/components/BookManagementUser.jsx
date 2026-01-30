@@ -265,7 +265,7 @@ const BookManagementUser = () => {
                     {/* ẢNH BÌA */}
                     <div className="relative w-full overflow-hidden aspect-[2/3] bg-gray-100">
                       <img
-                        src={book?.coverImage || PLACEHOLDER_IMAGE}
+                        src={book?.coverImage?.url || PLACEHOLDER_IMAGE}
                         alt={book?.title || "Book cover"}
                         className="w-full h-full object-cover object-center"
                         loading="lazy"

@@ -27,18 +27,26 @@ const AddNewAdmin = () => {
     }
   };
 
-  const handleAddNewAdmin = (e) => {
-    e.preventDefault();
+const handleAddNewAdmin = (e) => {
+  e.preventDefault();
 
-    // ✅ Tạo FormData đúng cách
-    const formData = new FormData();
-    formData.append("name", name);
-    formData.append("email", email);
-    formData.append("password", password);
-    formData.append("avatar", avatar); // ← Key phải khớp với backend: .single("avatar")
+  const formData = new FormData();
+  formData.append("name", name);
+  formData.append("email", email);
+  formData.append("password", password);
+  formData.append("avatar", avatar);
 
-    dispatch(addNewAdmin(formData));
-  };
+  // ✅ THÊM: Log để debug
+  console.log("📤 Creating admin with avatar:", {
+    name,
+    email,
+    avatarFile: avatar?.name,
+    avatarType: avatar?.type,
+    avatarSize: avatar?.size
+  });
+
+  dispatch(addNewAdmin(formData));
+};
 
   return (
     <>

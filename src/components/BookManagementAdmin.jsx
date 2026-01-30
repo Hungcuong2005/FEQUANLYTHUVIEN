@@ -535,7 +535,7 @@ const BookManagementAdmin = () => {
                         <td className="px-4 py-3">
                           <div className="flex justify-center">
                             <img
-                              src={book?.coverImage || PLACEHOLDER_IMAGE}
+                              src={book?.coverImage?.url || PLACEHOLDER_IMAGE}
                               alt={book?.title || "Book cover"}
                               className="w-16 h-20 object-cover rounded-md shadow-sm border border-gray-200"
                               onError={(e) => {
