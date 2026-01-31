@@ -22,7 +22,6 @@ import axiosClient from "../api/axiosClient";
 
 const MAX_CATEGORIES = 3;
 
-// ✅ PLACEHOLDER IMAGE - ảnh mặc định khi chưa có cover
 const PLACEHOLDER_IMAGE =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='120' viewBox='0 0 100 120'%3E%3Crect width='100' height='120' fill='%23FDE8EA'/%3E%3Ctext x='50%25' y='50%25' font-family='Arial' font-size='14' fill='%23C41526' text-anchor='middle' dy='.3em'%3ENo Image%3C/text%3E%3C/svg%3E";
 
@@ -177,11 +176,7 @@ const BookManagementAdmin = () => {
     return `${value}₫`;
   };
 
-  /**
-   * Xử lý Xóa mềm (Soft Delete)
-   * Điều kiện: Số lượng tồn kho (Quantity) phải bằng Tổng số bản sao (TotalCopies)
-   * Tức là chưa có ai mượn cuốn nào.
-   */
+
   const handleSoftDelete = async (book) => {
     if (!book?._id) return;
 

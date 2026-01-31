@@ -19,7 +19,7 @@ import logo from "../assets/logo2.png";
 import { useSelector } from "react-redux";
 import Header from "../layout/Header";
 
-// Đăng ký các thành phần cho ChartJS
+
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -32,15 +32,7 @@ ChartJS.register(
   ArcElement
 );
 
-/**
- * Component AdminDashboard (Trang chủ Admin)
- * - Hiển thị tổng quan hệ thống: Số User, Số Sách, Số Admin.
- * - Biểu đồ thống kê sách đang mượn/đã trả.
- * - Thông tin Admin đang đăng nhập.
- * - Random Quote.
- */
 const AdminDashboard = () => {
-  // Lấy dữ liệu từ Redux Store
   const { user } = useSelector((state) => state.auth);
   const { users } = useSelector((state) => state.user);
   const { books, totalBooks: totalBooksFromStore } = useSelector((state) => state.book);
@@ -56,7 +48,6 @@ const AdminDashboard = () => {
   const [totalReturnedBooks, setTotalReturnedBooks] = useState(0);
   const [quote, setQuote] = useState("");
 
-  // Danh sách các câu trích dẫn
   const QUOTES = [
     "Sách là ngọn đèn sáng bất diệt của trí tuệ con người.",
     "Đọc sách không những để mở mang trí tuệ mà còn để nuôi dưỡng tâm hồn.",
@@ -75,7 +66,6 @@ const AdminDashboard = () => {
     setQuote(randomQuote);
   }, []);
 
-  // Effect: Tính toán các số liệu thống kê realtime khi dữ liệu thay đổi
   useEffect(() => {
     let numberOfUsers = users.filter((user) => user.role === "User");
     let numberOfAdmins = users.filter((user) => user.role === "Admin");
@@ -95,7 +85,6 @@ const AdminDashboard = () => {
     setTotalReturnedBooks(numberOfTotalReturnedBooks.length);
   }, [users, allBorrowedBooks, books, totalBooksFromStore]);
 
-  // Dữ liệu cho biểu đồ Pie
   const data = {
     labels: ["Sách đang mượn", "Sách đã trả"],
     datasets: [
